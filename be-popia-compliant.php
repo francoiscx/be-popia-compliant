@@ -28,7 +28,6 @@
     Copyright 2021 Automatic, Inc.
 */
 /* ------------------------------------------------------------------------------------------------------------------ 
-
   ____       _____   ____  _____ _____          _____                      _ _             _                        
  |  _ \     |  __ \ / __ \|  __ \_   _|   /\   / ____|                    | (_)           | |                       
  | |_) | ___| |__) | |  | | |__) || |    /  \ | |     ___  _ __ ___  _ __ | |_  __ _ _ __ | |_   ___ ___   ______ _ 
@@ -329,12 +328,10 @@ function bpc_dashboard(){
                 echo'
                 <div class="bpc_dashboard_main_about">
                     Be Popia Compliant (BPC) - avoid fines and imprisonment.
-
                     <p>BPC has researched on your behalf, no need to read 80 pages of POPIA and countless more references into other laws such as the Electronic Communications Act 36 of 2005 and The Promotion of Access to Information Act 2 of 2000.
                     In the Pro version we practically do all the work for you.</p>
                     
                     <p>Don\'t want to go pro? Don\'t worry, u can use our POPIA checklist to be sure to cover all requirements.</p>
-
                     <p>We even include cookie notice.</p>
                 </div>
             </div>
@@ -367,14 +364,12 @@ function bpc_dashboard(){
                     echo'
                     <label class="bpc_p_label" for="bpc_company_key_input">Company Key:</label>
                     <input class="bpc_company_key_input widefat" type="text" id="bpc_company_key_input" name="bpc_company_key_input" value="'. $result->value .'">
-
                     <button id="url_button" onclick="save_keys(); location.reload();">Save</button>                       
                                                     
                     <script>                                                    
                         function save_keys(){      
                             var api_key = document.getElementById("bpc_api_key_input").value;
                             var company_key = document.getElementById("bpc_company_key_input").value;
-
                             jQuery.ajax({
                                 type: "post",
                                 cache: false,
@@ -416,13 +411,11 @@ function bpc_dashboard(){
                 
                 <p>Criminal: POPIA imposes various criminal offences for non-compliance. Non-compliance with POPIA can result in imprisonment not exceeding 10 years and/or a fine not exceeding R10 million.</p>
                 <p>Civil: In terms of section 99 of POPIA, a data subject or, at the request of the data subject, the Regulator, may institute a civil action for damages in a court having jurisdiction against a responsible party for breach of POPIA.</p>
-
             </div>
             <div class="bpc_dashboard_four">
                 <p>To find out more about Be POPIA Compliant please <a href="https://bepopiacompliant.co.za" class="bpc_dashboard_button">visit our webpage</a>. </p>
             </div>
         </div>
-
         <script>
             window.onload = check_db;
             function yourFunction(){
@@ -658,9 +651,7 @@ function bpc_dashboard_checklist(){
         <div class="bpc_wrap">
         
             <h1 style="text-align-last: center;font-size:50px;">POPIA CHECKLIST</h1>
-
             
-
             <div class="Progress">
                     <div id="completed_consent" style="display:none;">
                         <br>
@@ -695,7 +686,6 @@ function bpc_dashboard_checklist(){
                             if(data == 100){
                                 document.getElementById("completed_consent").style.display = "block";
                                 document.getElementById("not_completed_consent").style.display = "none";
-
                             } else {
                                 document.getElementById("completed_consent").style.display = "none";
                                 document.getElementById("not_completed_consent").style.display = "block";
@@ -706,14 +696,12 @@ function bpc_dashboard_checklist(){
                         error: function(errorThrown){
                         }
                     });
-
                     
                 }
                 
                 yourFunction();
             </script>
             <br><br>
-
             <div class="bpc_row">
                 <div class="bpc_col">
                     <div class="bpc_tabs">';
@@ -809,7 +797,6 @@ function bpc_dashboard_checklist(){
                                                 <input type="checkbox" '; if($result->does_comply == 1){echo 'checked';} echo ' class="bpc_checkbox" id="bpc_checkbox" name="bpc_checkbox" onclick="validate(bpc_checkbox,' . $result->id . ')">';
                                             } elseif($result->type == 2){
                                                 echo '
-
                                                     <input type="hidden" id="bpc_id_url" name="bpc_id_url" value="' . $result->id . '">
                                                     <input type="text" id="input_field' . $result->id . '" name="input_field' . $result->id . '" placeholder="eg. https://mydomain.co.za/page.php" class="widefat"'; if($result->content != ''){ echo 'value="' . $result->content . '"';} echo'>
                                                     <button id="url_button" onclick="save_field(' . $result->id . ')">Save</button>
