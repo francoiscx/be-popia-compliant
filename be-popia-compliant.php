@@ -527,7 +527,7 @@ function bpc_dashboard_checklist(){
                             </div>
                         </progress>
                         <h2 class="Progress-label" id="Progress-id">You are <strong><span id="progress-percent"></span>%</strong> compliant.</h2>
-                        <p class="Progress-paragraph">Complete the below instructions one by one, and tick them off as you complete a task.</p>
+                        <p class="Progress-paragraph">Complete the below instructions one by one, and if applicable tick them off, as you complete a task or take notice of the instruction.</p>
                     </div>
             </div>
             <script>
@@ -637,31 +637,60 @@ function bpc_dashboard_checklist(){
                                 $checks = $wpdb->get_results("SELECT * FROM $table_name WHERE id = 3");
                                 foreach($checks as $check){
                                     if($check->does_comply == 1){
-                                        echo '
-                                        <div class="bpc_tab">
-                                            <input class="bpc_input"  type="radio" id="rd' . $result->id . '" name="rd">
-                                            <label '; if($result->does_comply == 0){echo 'class="bpc_tab-label"';} else {echo'class="bpc_tab-label_completed"';} echo ' for="rd' . $result->id . '">' . $result->title . '</label>
-                                            ';
-                                            if($result->description != ""){
+                                        
+                                        
+                                        global $wpdb;
+        
+                                        $table_name = $wpdb->prefix . 'be_popia_compliant_checklist';
 
+                                        $needComms = $wpdb->get_var( $wpdb->prepare(
+                                            " SELECT does_comply FROM $table_name WHERE id = 2")
+                                        );
+                                        
+                                        $needMarketing = $wpdb->get_var( $wpdb->prepare(
+                                            " SELECT does_comply FROM $table_name WHERE id = 3")
+                                        );
+
+                                        if($needComms == 0 && $needMarketing == 1) {
+                                            echo '
+                                            <div class="bpc_tab">
+                                                <input class="bpc_input"  type="radio" id="rd' . $result->id . '" name="rd">
+                                                <label '; if($result->does_comply == 0){echo 'class="bpc_tab-label"';} else {echo'class="bpc_tab-label_completed"';} echo ' for="rd' . $result->id . '">14. MARKETING COMMUNICATION:</label>
+                                                ';
+                                                if($result->description != ""){
+
+                                                    echo'
+                                                    <div class="bpc_tab-content">
+                                                        ' . $result->description . '
+                                                        <input type="hidden" id="bpc_id" name="bpc_id" value="' . $result->id . '">
+                                                        <input type="checkbox" '; if($result->does_comply == 1){echo 'checked';} echo ' class="bpc_checkbox" id="bpc_checkbox" name="bpc_checkbox" onclick="validate(bpc_checkbox,' . $result->id . ')">';
+                                                }
                                                 echo'
-                                                <div class="bpc_tab-content">
-                                                    ' . $result->description . '
-                                                    <input type="hidden" id="bpc_id" name="bpc_id" value="' . $result->id . '">
-                                                    <input type="checkbox" '; if($result->does_comply == 1){echo 'checked';} echo ' class="bpc_checkbox" id="bpc_checkbox" name="bpc_checkbox" onclick="validate(bpc_checkbox,' . $result->id . ')">';
-                                            }
-                                            echo'
-                                            </div>
-                                        </div>';
+                                                </div>
+                                            </div>';
+                                    } else {
+                                            echo '
+                                            <div class="bpc_tab">
+                                                <input class="bpc_input"  type="radio" id="rd' . $result->id . '" name="rd">
+                                                <label '; if($result->does_comply == 0){echo 'class="bpc_tab-label"';} else {echo'class="bpc_tab-label_completed"';} echo ' for="rd' . $result->id . '">' . $result->title . '</label>
+                                                ';
+                                                if($result->description != ""){
+
+                                                    echo'
+                                                    <div class="bpc_tab-content">
+                                                        ' . $result->description . '
+                                                        <input type="hidden" id="bpc_id" name="bpc_id" value="' . $result->id . '">
+                                                        <input type="checkbox" '; if($result->does_comply == 1){echo 'checked';} echo ' class="bpc_checkbox" id="bpc_checkbox" name="bpc_checkbox" onclick="validate(bpc_checkbox,' . $result->id . ')">';
+                                                }
+                                                echo'
+                                                </div>
+                                            </div>';
+                                        }
                                     }
                                 }
                             } else {
 
-
-
-
-
-                                
+                               
                                     if($marketing == 38) {
                                         if($result->type == 5) {
                                             echo '
@@ -761,11 +790,11 @@ function bpc_dashboard_checklist(){
                                         ' . $result->description . '
                                             ';
                                             if($result->type == 1 || $result->type == 5 || $result->type == 6 || $result->type == 7){
-                                                
-                                                    echo '
-                                                        <input type="hidden" id="bpc_id" name="bpc_id" value="' . $result->id . '">
-                                                        <input type="checkbox" '; if($result->does_comply == 1){echo 'checked';} echo ' class="bpc_checkbox" id="bpc_checkbox" name="bpc_checkbox" onclick="validate(bpc_checkbox,' . $result->id . ')">';
-                                                
+                                            
+                                                echo '
+                                                <input type="hidden" id="bpc_id" name="bpc_id" value="' . $result->id . '">
+                                                <input type="checkbox" '; if($result->does_comply == 1){echo 'checked';} echo ' class="bpc_checkbox" id="bpc_checkbox" name="bpc_checkbox" onclick="validate(bpc_checkbox,' . $result->id . ')">';
+                                                    
                                             } elseif($result->type == 2){
                                                 echo '
                                                     <input type="hidden" id="bpc_id_url" name="bpc_id_url" value="' . $result->id . '">
@@ -1003,35 +1032,45 @@ function bpc_checklist_update_compliance() {
         // $needMarketing = $wpdb;
 
         $needComms = $wpdb->get_var( $wpdb->prepare(
-            " SELECT does_comply FROM {$wpdb->prefix}$table_name WHERE id = 2")
+            " SELECT does_comply FROM $table_name WHERE id = 2")
         );
         
         $needMarketing = $wpdb->get_var( $wpdb->prepare(
-            " SELECT does_comply FROM {$wpdb->prefix}$table_name WHERE id = 3")
+            " SELECT does_comply FROM $table_name WHERE id = 3")
         );
 
         
-
         
-        if($needComms == 0) {
+        if($needComms == 1 && $needMarketing == 0) {
 
-            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND (id != 2) AND is_active = 1");
+            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND (id != 3) AND (id != 59) AND is_active = 1");
             $rowcount = $wpdb->num_rows;
 
-            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND (id != 2) AND is_active = 1");
+            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND (id != 3) AND (id != 59) AND is_active = 1");
+            $rowcount2 = $wpdb->num_rows;
+
+        } elseif($needComms == 0 && $needMarketing == 1) {
+
+            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND (id != 2) AND (id != 58) AND is_active = 1");
+            $rowcount = $wpdb->num_rows;
+
+            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND (id != 2) AND (id != 58) AND is_active = 1");
+            $rowcount2 = $wpdb->num_rows;
+
+        } elseif($needComms == 1 && $needMarketing == 1) {
+
+            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND is_active = 1");
+            $rowcount = $wpdb->num_rows;
+
+            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND is_active = 1");
             $rowcount2 = $wpdb->num_rows;
 
         } elseif($needMarketing == 0 && $needComms == 0) {
-            // $rowcount2 = 1;
-        } else {
+            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND (id != 2) AND (id != 3) AND (id != 58) AND (id != 59) AND is_active = 1");
+            $rowcount = $wpdb->num_rows;
 
-            // $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND (id != 2 AND id != 3 AND id != 4) AND is_active = 1");
-            // $rowcount = $wpdb->num_rows;
-
-            // $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND (id != 2 AND id != 3 AND id != 4) AND is_active = 1");
-            // $rowcount2 = $wpdb->num_rows;
-            // $rowcount2 = $rowcount2;
-
+            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND (id != 2) AND (id != 3) AND (id != 58) AND (id != 59) AND is_active = 1");
+            $rowcount2 = $wpdb->num_rows;
         }
 
         $rowcount = ($rowcount / $rowcount2) * 100;
