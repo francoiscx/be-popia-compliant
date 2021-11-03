@@ -50,51 +50,55 @@ if(!defined('ABSPATH')){
 function bpc_user_scripts() {
     $plugin_url = plugin_dir_url( __FILE__ );
 
-    wp_enqueue_style( 'style',  $plugin_url . "/style.css");
+    wp_enqueue_style( 'style',  $plugin_url . "styles.css");
 }
 
 add_action( 'admin_print_styles', 'bpc_user_scripts' );
 
 
-
 function bpc_create() {
     global $wpdb;
     
-    $bpc_tb_name= $wpdb->prefix ."be_popia_compliant_checklist";
+    $bpc_tb_checklist= $wpdb->prefix ."be_popia_compliant_checklist";
     
     require_once(ABSPATH ."wp-admin/includes/upgrade.php");
     
-    $bpc_query="
-    CREATE TABLE IF NOT EXISTS $bpc_tb_name(
+    $bpc_query_checklist="
+    CREATE TABLE $bpc_tb_checklist(
         id int(12) NOT NULL AUTO_INCREMENT,
         title varchar(100) DEFAULT '',
         description varchar(1500) DEFAULT '',
         content varchar(500) DEFAULT '',
         type int(1) DEFAULT '0',
         does_comply int(1) DEFAULT '0',
-        PRIMARY KEY  (id)
-    )";
-    
-    dbDelta($bpc_query);
+        is_active int(1) DEFAULT'1',
+        PRIMARY KEY (id))";
+    dbDelta($bpc_query_checklist);
 
-    $bpc_query="
-    CREATE TABLE IF NOT EXISTS ". $wpdb->prefix . "be_popia_compliant_admin(
-        id int(12) NOT NULL AUTO_INCREMENT,
-        title varchar(100) DEFAULT '',
-        value varchar(1500) DEFAULT '',
-        PRIMARY KEY  (id)
-    )";
-    dbDelta($bpc_query);
 
-    $bpc_query="
-    CREATE TABLE IF NOT EXISTS ". $wpdb->prefix . "be_popia_compliant_logs(
+    $bpc_tb_logs= $wpdb->prefix ."be_popia_compliant_logs";
+
+    $bpc_query_logs="
+    CREATE TABLE $bpc_tb_logs(
         id int(12) NOT NULL AUTO_INCREMENT,
         userID int(12) DEFAULT '',
         action varchar(1500) DEFAULT '',
-        PRIMARY KEY  (id)
-    )";
-    dbDelta($bpc_query);
-    echo '<script>console.log('.$wpdb->last_error.')</script>';
+        PRIMARY KEY (id))";
+    dbDelta($bpc_query_logs);
+
+
+    $bpc_tb_admin= $wpdb->prefix ."be_popia_compliant_admin";
+    $bpc_query_admin="
+    CREATE TABLE $bpc_tb_admin (
+        id int(12) NOT NULL AUTO_INCREMENT,
+        title varchar(100) DEFAULT '',
+        value varchar(1500) DEFAULT '',
+        PRIMARY KEY (id))";
+    dbDelta($bpc_query_admin);
+
+    
+
+    // echo '<script>console.log('.$wpdb->last_error.')</script>';
 }
 
 function bpc_insert_data() {
@@ -129,7 +133,7 @@ function bpc_insert_data() {
             array( 'title' => 'Contact Number', 'description' => 'Textfield - Preferably try to collect cell numbers to accommodate future feature updates on the Be POPIA Compliant plugin.', 'type' => 1 ),
             array( 'title' => 'Email', 'description' => 'Email field - Must be the address they have registered with on your site.', 'type' => 1 ),
             array( 'title' => 'Identity Number / Company Registration Number', 'description' => 'Textfield - For verification against ID Document / Company Registration Document.', 'type' => 1 ),
-            array( 'title' => 'Request type', 'description' => 'SelectField - Provide the following three (3) options: <ul><li>- Download Data</li><li>- Delete Data</li><li>- Download and Delete Data</li></ul>', 'type' => 1 ),
+            array( 'title' => 'Request type', 'description' => 'SelectField - Provide the following four (4) options: <ul><li>- Update Data</li><li>- Download Data</li><li>- Delete Data</li><li>- Download and Delete Data</li></ul>', 'type' => 1 ),
             array( 'title' => 'Upload ID / Upload ID and Company Registration Document', 'description' => 'File Upload Field - To verify that the request came from DATA SUBJECT.', 'type' => 1 ),
             array( 'title' => 'Upload Selfie (holding their ID)', 'description' => 'File Upload Field - To verify Requestor as DATA SUBJECT.', 'type' => 1 ),
             array( 'title' => 'Request Data URL', 'description' => 'Supply the link where your clients can request their Data.', 'type' => 2 ),
@@ -152,9 +156,9 @@ function bpc_insert_data() {
             array( 'title' => 'Use and modify this caption for A.2.', 'description' => 'To process *--insert your service here--*, we need to process your personal information.', 'type' => 1 ),
             array( 'title' => 'Use and modify this caption for A.3.', 'description' => 'Therefore, without your consent, we will not be able to process your request unless we have your express consent.', 'type' => 1 ),
             array( 'title' => 'Use and modify this caption for A.4.', 'description' => 'None of the parties above shall store and therfore shall not use your information for the purposes of marketing.', 'type' => 5 ),
-            array( 'title' => 'Use and modify this caption for A.4.', 'description' => 'Any of the parties above shall only be allowed to market through the channels you select in section C.15.', 'type' => 6 ),
+            array( 'title' => 'Use and modify this caption for A.4.', 'description' => 'Any of the parties above shall only be allowed to market through the channels you select in section D.15.', 'type' => 6 ),
             array( 'title' => 'Consent Form | Section B - RESPONSIBLE PARTIES THAT IS REQUESTING CONSENT', 'description' => 'You need to understand that: According to POPIA, you need to appoint a "DATA OFFICER". In a small business setup, this will typically be you. Your organisation and everyone working in it as a collective is referred to as the "RESPONSIBLE PARTY". The Courier you provide data to for delivery is also a "RESPONSIBLE PARTY" and you need to also request consent on their behalf.', 'type' => 1 ),
-            array( 'title' => 'List RESPONSIBLE PARTIES with responsibilities', 'description' => 'List each RESPONSIBLE PARTIES and follow up with the service they will deliver. Do B.1. for the first, B.2. for the second etc.', 'type' => 1 ),
+            array( 'title' => 'List RESPONSIBLE PARTIES with responsibilities', 'description' => 'List each RESPONSIBLE PARTY and follow up with the service they will deliver. Do B.1. for the first, B.2. for the second etc.', 'type' => 1 ),
             array( 'title' => 'Consent Form | Section C - OUR COMMITMENT TO PROTECTING THE PERSONAL INFORMATION OF OUR CLIENTS', 'description' => 'According to POPIA, you need to properly inform your clients of their rights. Use the following paragraph as a basis and change accordingly:', 'type' => 0 ),
             array( 'title' => 'Use this caption', 'description' => 'The responsible parties mentioned in section (B) above is committed to protecting your privacy and recognises that it needs to comply with statutory requirements in collecting, processing, and distributing personal information. The Constitution of the Republic of South Africa provides that everyone has the right to privacy and the Protection of Personal Information Act 4 of 2013 (“POPI”) includes the right to protection against unlawful collection, retention, dissemination and use of personal information. In terms of section 18 of POPI, if personal information is collected, the above parties, as responsible parties, must take reasonably practicable steps to ensure that the data subject is made aware of the information being collected.', 'type' => 1 ),
             array( 'title' => 'Consent Form | Section D - PROCESSING OF WHAT PERSONAL INFORMATION AND HOW', 'description' => 'Define the Personal Info that is to be collected. The following 15 points need to be clearly explained in Section D of your Consent form.', 'type' => 0 ),
@@ -175,8 +179,8 @@ function bpc_insert_data() {
             array( 'title' => '15. MARKETING COMMUNICATION:', 'description' => 'Since you send out marketing material to your clients, you need to add a clause to your consent form (with the heading: Marketing Communication) where your customers need to tick the methods they prefer as preferred means of marketing. If they do not tick for eg. WhatsApp, you are not allowed to contact them via WhatsApp. Include each of these with tickboxes, if you want to make use of such marketing means:<ul><li>- Telephone</li><li>- SMS</li><li>- Email</li><li>- WhatsApp</li><li>- Telegram</li><li>- Messenger</li><li>- Add any other means whereby you send messages to your clients.', 'type' => 4 ),
             
             array( 'title' => 'Register the Information Officer', 'description' => 'According to the POPI Act, for responsible parties to be compliant with POPIA they are required amongst many actions to appoint and register their Information Officers (IO) with the Information Regulator and apply for Prior Authorisation before processing personal information.', 'type' => -1 ),
-            array( 'title' => 'Appoint a Data Officer', 'description' => 'By default, the CEO or head of the organisation is deligated as the Data Officer, but a Data Officer can formally be appointed to take over these duties from the CEO. Visit our<a href=https://bepopiacompliant.co.za/Appointment_of_Information_Officer target="_blank">Appointment of Information Officer</a> page to have us draft an Appointment letter so you can carry on those responsibilities over to a designated person in your organisation. Take note that ultimately the CEO is still responsible for the actions of the Data Officer, so make sure you designate someone responsible and competent. If you are the CEO or head and deside not to appoint someone for this duty, youd probably want to become better aquinted with the duties at hand. Visit our <a href=https://bepopiacompliant.co.za/Data_Officer_Guidance_Note>Data Officer Guidance Note</a> page for details.', 'type' => 1 ),
-            array( 'title' => 'Follow these instructions to register your Information Officer', 'description' => 'Visit the <a href=https://www.justice.gov.za/inforeg/portal.html target="_blank">INFORMATION REGULATOR PORTAL</a> to Register. (They have been experiancing technical issues with the Portal, which results in not being accessible)<br> - If this is still the case, they provided a <a href=https://www.justice.gov.za/inforeg/docs/forms/InfoRegSA-eForm-InformationOfficersRegistration-2021.pdf target="_blank">PDF Registration</a> as an alternative, that can be filled out in the browser. You\'d still have to print it out in order to sign the document. Thereafter you can send it via email to: <a href=mailto:registration.IR@justice.gov.za>registration.IR@justice.gov.za</a>', 'type' => 1 ),
+            array( 'title' => 'Appoint a Data Officer', 'description' => 'By default, the CEO or head of the organisation is deligated as the Data Officer, but a Data Officer can formally be appointed to take over these duties from the CEO. Visit our <a href=https://bepopiacompliant.co.za/Appointment_of_Information_Officer target="_blank">Appointment of Information Officer</a> page to have us draft an Appointment letter so you can carry those responsibilities over to a designated person in your organisation. Take note that ultimately the CEO is still responsible for the actions of the Data Officer, so make sure you designate someone responsible and competent. Whether or not you are the CEO or head and decide to or not to appoint someone for this duty, you\'d probably want to become better acquainted with the duties at hand, even if it is only as a supervisory position. Visit our <a href=https://bepopiacompliant.co.za/Data_Officer_Guidance_Note>Data Officer Guidance Note</a> page for details.', 'type' => 1 ),
+            array( 'title' => 'Follow these instructions to register your Information Officer', 'description' => 'Visit the <a href=https://www.justice.gov.za/inforeg/portal.html target="_blank">INFORMATION REGULATOR PORTAL</a> to Register.<br>(At the time of the release of this plugin, the Information Officer has been experiencing technical issues with their Portal, which resulted in it not being accessible)<br> - If this is still the case, they provided a <a href=https://www.justice.gov.za/inforeg/docs/forms/InfoRegSA-eForm-InformationOfficersRegistration-2021.pdf target="_blank">PDF Registration</a> as an alternative, that can be filled out in the browser. You\'d still have to print it out in order to sign the document. Thereafter you can send it via email to: <a href=mailto:registration.IR@justice.gov.za>registration.IR@justice.gov.za</a>', 'type' => 1 ),
 
             array( 'title' => 'Active Tasks', 'description' => 'There are some tasks that you have to monitor daily, to stay compliant and to avoid hefty fines or imprisonment.', 'type' => -1 ),
             array( 'title' => 'For every request of the following:', 'description' => '', 'type' => 0 ),
@@ -194,19 +198,16 @@ function bpc_insert_data() {
             array( 'title' => 'What to do when data gets breached?', 'description' => '<span class="pro"><span class="withpro">With Pro: </span>We allow you to answer a few questions and we will do the rest.</span><br><br>In the event that your website has been compromised or it becomes evident that any of your employees collected or distributed any of your clients data, or any other event happened where data got lost you should send out a notice to all affected parties. If you are not sure who was affected you should send a notice to your entire database notifying them that their data might have been compromised.', 'type' => 7 ),
         );
 
-
-
-
-
         foreach($all_items as $item){
             $wpdb->insert( 
                 $table_name, 
                 $item
-
             );
         }
     }
 }
+
+
 
 function bpc_insert_p_data() {
     global $wpdb;
@@ -223,6 +224,7 @@ function bpc_insert_p_data() {
             array( 'title' => 'API Key'),
             array( 'title' => 'Company Key'),
             array( 'title' => 'Suspended'),
+            // array( 'title' => 'flag_IR_Problem', 'value' => '(They have been experiancing technical issues with the Portal, which results in not being accessible)<br> - If this is still the case, they provided a <a href=https://www.justice.gov.za/inforeg/docs/forms/InfoRegSA-eForm-InformationOfficersRegistration-2021.pdf target="_blank">PDF Registration</a> as an alternative, that can be filled out in the browser. You\'d still have to print it out in order to sign the document. Thereafter you can send it via email to: <a href=mailto:registration.IR@justice.gov.za>registration.IR@justice.gov.za</a>'),
         );
 
         foreach($all_items as $item){
@@ -293,6 +295,7 @@ function bpc_dashboard(){
                 $result_api = $wpdb->get_row("SELECT value FROM $table_name WHERE id = 1");
                 $result_company = $wpdb->get_row("SELECT value FROM $table_name WHERE id = 2");
                 $result_suspended = $wpdb->get_row("SELECT value FROM $table_name WHERE id = 3");
+                
 
                 if((isset($result_api->value) && $result_api->value !='') && (isset($result_company->value) && $result_company->value != '') && $result_suspended->value != 1){
                     echo'
@@ -327,9 +330,9 @@ function bpc_dashboard(){
 
                 echo'
                 <div class="bpc_dashboard_main_about">
-                    Be Popia Compliant (BPC) - avoid fines and imprisonment.
+                    Be Popia Compliant (BPC) - avoid fines and imprisonment by becoming POPIA Compliant.
                     <p>BPC has researched on your behalf, no need to read 80 pages of POPIA and countless more references into other laws such as the Electronic Communications Act 36 of 2005 and The Promotion of Access to Information Act 2 of 2000.
-                    In the Pro version we practically do all the work for you.</p>
+                    In the Pro version, we practically do all the work for you.</p>
                     
                     <p>Don\'t want to go pro? Don\'t worry, u can use our POPIA checklist to be sure to cover all requirements.</p>
                     <p>We even include cookie notice.</p>
@@ -392,16 +395,20 @@ function bpc_dashboard(){
                 } else {
                     echo '<h2 class="bpc_dashboard_upgrade_heading">Upgrade to BPC Pro</h2>
                     <ul>
+                        <li>Proof to visitors that you are compliant</li>
                         <li>Shorter Setup</li> 
+                        <li>We also keep a log register for all actions
+                        <li>Litigation? We have your back</li>
                         <li>No need to struggle to get consent</li>
                         <li>No need to manually follow up with clients</li>
                         <li>Your website will know who has consent</li>
-                        <li>No need for authentication of requesters</li>
-                        <li>No need to waste time on requests</li>
-                        <li>We also delete data on your behalf</li>
+                        <li>No need to authenticate requesters</li>
+                        <li>No need to waste time on processing requests</li>
+                        <li>We delete, update and send data on your behalf</li>
                         <li>Cookie notice included free of charge</li>
+                        
                     </ul>
-                    <a href="https://bepopiacompliant.co.za" class="bpc_dashboard_go_pro">Go Pro</a>';
+                    <a href="https://bepopiacompliant.co.za" class="bpc_dashboard_go_pro" target="_blank">Go Pro</a>';
                 }
                 
                 echo '
@@ -409,16 +416,16 @@ function bpc_dashboard(){
             <div class="bpc_dashboard_three">
                 <h2>Consequences of non-compliance</h2>
                 
-                <p>Criminal: POPIA imposes various criminal offences for non-compliance. Non-compliance with POPIA can result in imprisonment not exceeding 10 years and/or a fine not exceeding R10 million.</p>
+                <p>Criminal: POPIA imposes various criminal offences for non-compliance. Non-compliance with POPIA can result in imprisonment not exceeding ten (10) years and/or a fine not exceeding R10 million.</p>
                 <p>Civil: In terms of section 99 of POPIA, a data subject or, at the request of the data subject, the Regulator, may institute a civil action for damages in a court having jurisdiction against a responsible party for breach of POPIA.</p>
             </div>
             <div class="bpc_dashboard_four">
-                <p>To find out more about Be POPIA Compliant please <a href="https://bepopiacompliant.co.za" class="bpc_dashboard_button">visit our webpage</a>. </p>
+                <p>To find out more about Be POPIA Compliant, please <a href="https://bepopiacompliant.co.za" class="bpc_dashboard_button">visit our webpage</a>. </p>
             </div>
         </div>
         <script>
             window.onload = check_db;
-            function yourFunction(){
+            function checkStatus(){
                 setInterval(function(){
                     check_db() 
                 }, 3000);
@@ -438,7 +445,7 @@ function bpc_dashboard(){
                     }
                 });
             }
-            yourFunction();
+            checkStatus();
         </script>
     ';
 }
@@ -495,150 +502,6 @@ function bpc_p_key_save() {
 add_action( 'wp_ajax_bpc_p_key_save', 'bpc_p_key_save' ); 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function bpc_dashboard_checklist(){
     
 	global $wpdb;
@@ -669,7 +532,7 @@ function bpc_dashboard_checklist(){
             </div>
             <script>
                 window.onload = check_db;
-                function yourFunction(){
+                function checkStatus(){
                     setInterval(function(){
                         check_db() 
                     }, 3000);
@@ -699,21 +562,31 @@ function bpc_dashboard_checklist(){
                     
                 }
                 
-                yourFunction();
+                checkStatus();
             </script>
             <br><br>
             <div class="bpc_row">
                 <div class="bpc_col">
                     <div class="bpc_tabs">';
                         foreach($results as $result){
+
+                            if($result->id == 3) {
+                                if($result->does_comply == 1) {
+                                    $marketing = 39;
+                                } else {
+                                    $marketing = 38;
+                                } 
+                            }
+
                             if($result->type == -1){
                                 echo '
                                 </div>
                                 <br><br>
                                 <div class="bpc_tabs">
                                 <div class="bpc_tab">
-                                    <span class="bpc_tab-main-section-label_completed" for="rd' . $result->id . '">' . $result->title . '<a href="#" title="' . $result->description . '" class="tooltip">?</a></span>
-                                </div>';
+                                    <span class="bpc_tab-main-section-label_completed" for="rd' . $result->id . '">' . $result->title;
+                                if($result->description != '') { echo '<a href="#" title="' . $result->description . '" class="tooltip">?</a></span>';}
+                                echo '</div>';
                             } elseif($result->type == 0){
                                 echo '
                                 <div class="bpc_tab">
@@ -756,7 +629,7 @@ function bpc_dashboard_checklist(){
                                         </div>';
                                     }
                                 }
-                            }elseif($result->type == 4){
+                            } elseif($result->type == 4){
                                 global $wpdb;
                                 
                                 $table_name = $wpdb->prefix . 'be_popia_compliant_checklist';
@@ -783,6 +656,192 @@ function bpc_dashboard_checklist(){
                                     }
                                 }
                             } else {
+
+
+
+
+
+                                
+                                    if($marketing == 38) {
+                                        if($result->type == 5) {
+                                            echo '
+                                            <div class="bpc_tab">
+                                                <input class="bpc_input"  type="radio" id="rd' . $result->id . '" name="rd">
+                                                <label '; if($result->does_comply == 0){echo 'class="bpc_tab-label"';} else {echo'class="bpc_tab-label_completed"';} echo ' for="rd' . $result->id . '" id="bpc_tab-label' . $result->id . '">' . $result->title . '</label>
+                                                <div class="bpc_tab-content"><br>
+                                                    
+                                                    ' . $result->description . '
+                                                        ';
+                                                        if($result->type == 1 || $result->type == 5 || $result->type == 6 || $result->type == 7){
+                                                            
+                                                                echo '
+                                                                    <input type="hidden" id="bpc_id" name="bpc_id" value="' . $result->id . '">
+                                                                    <input type="checkbox" '; if($result->does_comply == 1){echo 'checked';} echo ' class="bpc_checkbox" id="bpc_checkbox" name="bpc_checkbox" onclick="validate(bpc_checkbox,' . $result->id . ')">';
+                                                            
+                                                        } elseif($result->type == 2){
+                                                            echo '
+                                                                <input type="hidden" id="bpc_id_url" name="bpc_id_url" value="' . $result->id . '">
+                                                                <input type="text" id="input_field' . $result->id . '" name="input_field' . $result->id . '" placeholder="eg. https://' . $_SERVER['SERVER_NAME'] . '/?page_id=3" class="widefat"'; if($result->content != ''){ echo 'value="' . $result->content . '"';} echo'>
+                                                                <button id="url_button" onclick="save_field(' . $result->id . ')">Save</button>
+                                                                
+                                                                
+                                                                <script>                                                    
+                                                                    function save_field(check_id){
+                                                                        var result_id = "input_field" + check_id;
+                                                                        var input = document.getElementById(result_id).value;
+                                                                        var input_id = document.getElementById("bpc_id_url").value;
+                                                                        
+                                                                        jQuery.ajax({
+                                                                            type: "post",
+                                                                            cache: false,
+                                                                            dataType: "json",
+                                                                            url: ajaxurl,
+                                                                            data: {
+                                                                                "action":"bpc_checklist_update_url",
+                                                                                "check_id" : check_id,
+                                                                                "input" : input
+                                                                            },
+                                                                            success:function(data) {
+                                                                            },  
+                                                                            error: function(errorThrown){
+                                                                            }
+                                                                        });
+                                                                        
+                                                                    }
+                                                                </script>
+                                                            ';
+                                                        }
+                                                        echo'
+                                                </div>
+                                            </div>
+                                            <script>
+                                                            
+                                                function validate(el, check_id) {
+                                                    var label_id = "bpc_tab-label" + check_id;
+                                                    if (el.checked) {
+                                                        jQuery.ajax({
+                                                            url: ajaxurl,
+                                                            data: {
+                                                                "action":"bpc_checklist_update",
+                                                                "check_id" : check_id
+                                                            },
+                                                            success:function(data) {
+                                                                document.getElementById(label_id).style.background = "#B7191A";
+                                                            },  
+                                                            error: function(errorThrown){
+                                                                window.alert(errorThrown);
+                                                            }
+                                                        });
+                                                    } else {
+                                                        jQuery.ajax({
+                                                            url: ajaxurl,
+                                                            data: {
+                                                                "action":"bpc_checklist_update",
+                                                                "check_id" : check_id
+                                                            },
+                                                            success:function(data) {
+                                                                document.getElementById(label_id).style.background = "#1D2327";
+                                                            },  
+                                                            error: function(errorThrown){
+                                                                window.alert(errorThrown);
+                                                            }
+                                                        });
+                                                    }
+                                                }
+                                            </script>';         
+                                        }                           
+                                    } elseif ($marketing == 39){
+                                        if($result->type == 6) {
+                                            echo '
+                                <div class="bpc_tab">
+                                    <input class="bpc_input"  type="radio" id="rd' . $result->id . '" name="rd">
+                                    <label '; if($result->does_comply == 0){echo 'class="bpc_tab-label"';} else {echo'class="bpc_tab-label_completed"';} echo ' for="rd' . $result->id . '" id="bpc_tab-label' . $result->id . '">' . $result->title . '</label>
+                                    <div class="bpc_tab-content"><br>
+                                        
+                                        ' . $result->description . '
+                                            ';
+                                            if($result->type == 1 || $result->type == 5 || $result->type == 6 || $result->type == 7){
+                                                
+                                                    echo '
+                                                        <input type="hidden" id="bpc_id" name="bpc_id" value="' . $result->id . '">
+                                                        <input type="checkbox" '; if($result->does_comply == 1){echo 'checked';} echo ' class="bpc_checkbox" id="bpc_checkbox" name="bpc_checkbox" onclick="validate(bpc_checkbox,' . $result->id . ')">';
+                                                
+                                            } elseif($result->type == 2){
+                                                echo '
+                                                    <input type="hidden" id="bpc_id_url" name="bpc_id_url" value="' . $result->id . '">
+                                                    <input type="text" id="input_field' . $result->id . '" name="input_field' . $result->id . '" placeholder="eg. https://' . $_SERVER['SERVER_NAME'] . '/?page_id=3" class="widefat"'; if($result->content != ''){ echo 'value="' . $result->content . '"';} echo'>
+                                                    <button id="url_button" onclick="save_field(' . $result->id . ')">Save</button>
+                                                    
+                                                    
+                                                    <script>                                                    
+                                                        function save_field(check_id){
+                                                            var result_id = "input_field" + check_id;
+                                                            var input = document.getElementById(result_id).value;
+                                                            var input_id = document.getElementById("bpc_id_url").value;
+                                                            
+                                                            jQuery.ajax({
+                                                                type: "post",
+                                                                cache: false,
+                                                                dataType: "json",
+                                                                url: ajaxurl,
+                                                                data: {
+                                                                    "action":"bpc_checklist_update_url",
+                                                                    "check_id" : check_id,
+                                                                    "input" : input
+                                                                },
+                                                                success:function(data) {
+                                                                },  
+                                                                error: function(errorThrown){
+                                                                }
+                                                            });
+                                                            
+                                                        }
+                                                    </script>
+                                                ';
+                                            }
+                                            echo'
+                                    </div>
+                                </div>
+                                <script>
+                                                
+                                    function validate(el, check_id) {
+                                        var label_id = "bpc_tab-label" + check_id;
+                                        if (el.checked) {
+                                            jQuery.ajax({
+                                                url: ajaxurl,
+                                                data: {
+                                                    "action":"bpc_checklist_update",
+                                                    "check_id" : check_id
+                                                },
+                                                success:function(data) {
+                                                    document.getElementById(label_id).style.background = "#B7191A";
+                                                },  
+                                                error: function(errorThrown){
+                                                    window.alert(errorThrown);
+                                                }
+                                            });
+                                        } else {
+                                            jQuery.ajax({
+                                                url: ajaxurl,
+                                                data: {
+                                                    "action":"bpc_checklist_update",
+                                                    "check_id" : check_id
+                                                },
+                                                success:function(data) {
+                                                    document.getElementById(label_id).style.background = "#1D2327";
+                                                },  
+                                                error: function(errorThrown){
+                                                    window.alert(errorThrown);
+                                                }
+                                            });
+                                        }
+                                    }
+                                </script>';      
+                                            }    
+                                    }
+
+
+                                if($result->type != 5 && $result->type != 6){
                                 echo '
                                 <div class="bpc_tab">
                                     <input class="bpc_input"  type="radio" id="rd' . $result->id . '" name="rd">
@@ -791,14 +850,16 @@ function bpc_dashboard_checklist(){
                                         
                                         ' . $result->description . '
                                             ';
-                                            if($result->type == 1){
-                                                echo '
-                                                <input type="hidden" id="bpc_id" name="bpc_id" value="' . $result->id . '">
-                                                <input type="checkbox" '; if($result->does_comply == 1){echo 'checked';} echo ' class="bpc_checkbox" id="bpc_checkbox" name="bpc_checkbox" onclick="validate(bpc_checkbox,' . $result->id . ')">';
+                                            if($result->type == 1 || $result->type == 5 || $result->type == 6 || $result->type == 7){
+                                                
+                                                    echo '
+                                                        <input type="hidden" id="bpc_id" name="bpc_id" value="' . $result->id . '">
+                                                        <input type="checkbox" '; if($result->does_comply == 1){echo 'checked';} echo ' class="bpc_checkbox" id="bpc_checkbox" name="bpc_checkbox" onclick="validate(bpc_checkbox,' . $result->id . ')">';
+                                                
                                             } elseif($result->type == 2){
                                                 echo '
                                                     <input type="hidden" id="bpc_id_url" name="bpc_id_url" value="' . $result->id . '">
-                                                    <input type="text" id="input_field' . $result->id . '" name="input_field' . $result->id . '" placeholder="eg. https://mydomain.co.za/page.php" class="widefat"'; if($result->content != ''){ echo 'value="' . $result->content . '"';} echo'>
+                                                    <input type="text" id="input_field' . $result->id . '" name="input_field' . $result->id . '" placeholder="eg. https://' . $_SERVER['SERVER_NAME'] . '/?page_id=3" class="widefat"'; if($result->content != ''){ echo 'value="' . $result->content . '"';} echo'>
                                                     <button id="url_button" onclick="save_field(' . $result->id . ')">Save</button>
                                                     
                                                     
@@ -866,9 +927,18 @@ function bpc_dashboard_checklist(){
                                         }
                                     }
                                 </script>';
-                            }
+                                    }
+                                }
                             
                             }
+
+
+
+
+
+
+
+
                             echo'
                         </div>
                     </div>
@@ -929,11 +999,40 @@ function bpc_checklist_update_compliance() {
         
         $table_name = $wpdb->prefix . 'be_popia_compliant_checklist';
 
-        $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 3 AND type > 0) AND does_comply = 1 AND (id != 2 AND id != 3)");
-        $rowcount = $wpdb->num_rows;
+        // $wpdb->get_results("SELECT does_comply FROM $table_name WHERE id = 3)");
+        // $needMarketing = $wpdb;
 
-        $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 3 AND type > 0) AND (id != 2 AND id != 3)");
-        $rowcount2 = $wpdb->num_rows;
+        $needComms = $wpdb->get_var( $wpdb->prepare(
+            " SELECT does_comply FROM {$wpdb->prefix}$table_name WHERE id = 2")
+        );
+        
+        $needMarketing = $wpdb->get_var( $wpdb->prepare(
+            " SELECT does_comply FROM {$wpdb->prefix}$table_name WHERE id = 3")
+        );
+
+        
+
+        
+        if($needComms == 0) {
+
+            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND (id != 2) AND is_active = 1");
+            $rowcount = $wpdb->num_rows;
+
+            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND (id != 2) AND is_active = 1");
+            $rowcount2 = $wpdb->num_rows;
+
+        } elseif($needMarketing == 0 && $needComms == 0) {
+            // $rowcount2 = 1;
+        } else {
+
+            // $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND (id != 2 AND id != 3 AND id != 4) AND is_active = 1");
+            // $rowcount = $wpdb->num_rows;
+
+            // $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND (id != 2 AND id != 3 AND id != 4) AND is_active = 1");
+            // $rowcount2 = $wpdb->num_rows;
+            // $rowcount2 = $rowcount2;
+
+        }
 
         $rowcount = ($rowcount / $rowcount2) * 100;
         
@@ -948,106 +1047,11 @@ add_action( 'wp_ajax_bpc_checklist_update_compliance', 'bpc_checklist_update_com
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // adding styles and scripts
 function be_popia_compliant_cookie_enqueue_scripts() {
     // load styles and script for plugin only if cookies are not accepted
     if ( !isset( $_COOKIE['cookie-accepted'] ) ) {
-        wp_enqueue_style( 'styles', plugins_url( 'style.css', __FILE__ ) );
+        wp_enqueue_style( 'styles', plugins_url( 'styles.css', __FILE__ ) );
         wp_enqueue_script( 'be_popia_compliant_cookie_script', plugins_url( 'public/js/be_popia_compliant_cookie_script.js', __FILE__ ), array( 'jquery' ), 1.0, true );
         wp_localize_script( 'be_popia_compliant_cookie_script', 'be_popia_compliant_cookie_script_ajax_object',
             array( 
@@ -1179,7 +1183,7 @@ function bpc_admin_menus() {
 
     add_submenu_page ( $top_menu_item, '', 'Cookie Settings', 'manage_options', 'privacy-policy', 'be_popia_compliant_cookie_page_html_content');
 
-    add_submenu_page ( $top_menu_item, '', '<a href="https://bepopiacompliant.co.za" style="font-weight: normal;margin: -13px 0px 0px 0px;">Go Pro</a>', 'manage_options', 'go-pro', 'bpc_dashboard_go_pro');
+    add_submenu_page ( $top_menu_item, '', '<a href="https://bepopiacompliant.co.za" style="font-weight: normal;margin: -13px 0px 0px 0px;" target="_blank">Go Pro</a>', 'manage_options', 'go-pro', 'bpc_dashboard_go_pro');
 }
 add_action('admin_menu', 'bpc_admin_menus');
 

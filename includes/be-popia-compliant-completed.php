@@ -11,7 +11,7 @@ function bpc_active_check() {
             'headers' => array(
                 'Content-Type' => 'application/json',
             ),
-            'body'    => array(),
+            'body' => array(),
         );
     
         $response = wp_remote_get( $url, $args );
@@ -20,14 +20,14 @@ function bpc_active_check() {
         $body         = wp_remote_retrieve_body( $response );
         
         if ( 401 === $response_code ) {
-            echo "Unauthorized access";
+            echo "Unauthorized access, You do not seem to be authorised to access this data!";
         }
     
         if ( 200 !== $response_code ) {
-            echo " Error in pinging API";
+            echo " Error in pinging API, Please try again later.";
         }
     
-        if ( 200 === $response_code ) {            
+        if ( 200 === $response_code ) {
             $trimmed = trim($body, "[{}]");
             $trimmed = explode(',', $trimmed); 
             $trimmed = str_replace('"renew_date":', '', $trimmed[1]);      
