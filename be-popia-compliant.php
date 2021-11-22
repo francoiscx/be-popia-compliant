@@ -415,7 +415,9 @@ function bpc_dashboard(){
                     </script>
                     ';
                 } else {
-                    echo '<h2 class="bpc_dashboard_upgrade_heading">Upgrade to BPC Pro</h2>
+                    echo '
+                    <!--  <h2 class="bpc_dashboard_upgrade_heading"> ' . 'BlackFriday |<br><br> GET 75% discount!' . '</h2> -->
+                    <h2 class="bpc_dashboard_upgrade_heading">Upgrade to BPC Pro</h2>
                     <ul>
                         <li>Proof to visitors that you are compliant</li>
                         <li>Shorter Setup</li> 
@@ -1537,6 +1539,7 @@ function Be_POPIA_Compliant_echo_footer() {
                     .bpc_links {
                         margin: auto auto auto 0;
                         width: 75%;
+                        padding: 1%;
                         font-weight:900;
                     }
                     .bpc_links a {
