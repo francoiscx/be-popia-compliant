@@ -329,7 +329,8 @@ function bpc_dashboard(){
         //     echo "BODY: " . $body;
         // }
 
- 
+     
+     
     echo '
         <div class="bpc_wrap_dashboard">
             <div class="bpc_dashboard_one">';
@@ -513,8 +514,64 @@ function bpc_dashboard(){
             checkStatus();
         </script>
     ';
+    
+    }
+
+    
+ 
+function bpc_notice() {
+    global $pagenow;
+    $admin_pages = [ 'index.php', 'edit.php', 'plugins.php' ];
+
+
+    $url2 = "https://py.bepopiacompliant.co.za/api/getmessage/";
+        
+    $args2 = array(
+        'headers' => array(
+            'Content-Type' => 'application/json',
+        ),
+        'body'    => array(),
+    );
+
+    $response2 = wp_remote_get( $url2, $args2 );
+
+    $response_code2 = wp_remote_retrieve_response_code( $response2 );
+    $server_message = wp_remote_retrieve_body( $response2[-1] );
+
+    if ( 401 === $response_code2 ) {
+        echo "Unauthorized access";
+    }
+
+    if ( 200 !== $response_code2 ) {
+        echo " Error in pinging API" . $response_code2;
+    }
+
+    if ( 200 === $response_code2 ) {
+        echo "server_message: " . $server_message;
+    }    
+
+    if(isset($server_message)) {
+        
+    }
+
+
+
+
+    if ( in_array( $pagenow, $admin_pages ) ) {
+        if(isset($server_message)) {
+            ?>
+            <div class="notice notice-warning is-dismissible"> <p>
+                <?php
+                echo $server_message[-4];
+                ?>
+            </p></div>
+            <?
+
+        }
+    }
 }
 
+add_action( 'admin_notices', 'bpc_notice' );
 
 function bpc_p_key_save() {
     if ( isset($_REQUEST) ) {
