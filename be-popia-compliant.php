@@ -45,6 +45,47 @@ if(!defined('ABSPATH')){
 }
 
 session_start();
+
+add_action('user_register','add_user_details_to_py');
+
+function add_user_details_to_py($user_id){
+    $new_user = get_userdata($user_id);
+    $user_email = $new_user -> user_email;
+    $domain = $_SERVER['SERVER_NAME'];
+
+    if( ! $new_user ){
+        error_log( 'Unable to get userdata!' );
+        return;
+    }
+
+    $url  = 'https://py.bepopiacompliant.co.za/api/newusercreated/';
+    $body = array(
+        'domain' => $domain,
+        'email' => $user_email,
+        'user_id' => $user_id
+    );
+
+    $args = array(
+        'method'      => 'POST',
+        'timeout'     => 45,
+        'sslverify'   => false,
+        'headers'     => array(
+            'Content-Type'  => 'application/json',
+        ),
+        'body'        => json_encode($body),
+    );
+
+    $request = wp_remote_post( $url, $args );
+
+    if ( is_wp_error( $request ) || wp_remote_retrieve_response_code( $request ) != 200 ) {
+        error_log( print_r( $request, true ) );
+    }
+
+    $response = wp_remote_retrieve_body( $request );
+
+}
+
+
 //------------------------------------------------//
 //* Create Database Table for Be POPIA Compliant *//
 //------------------------------------------------//
@@ -297,9 +338,9 @@ function bpc_dashboard(){
                 $result_api = $wpdb->get_row("SELECT value FROM $table_name WHERE id = 1");
                 $result_company = $wpdb->get_row("SELECT value FROM $table_name WHERE id = 2");
                 $result_suspended = $wpdb->get_row("SELECT value FROM $table_name WHERE id = 3");
-                
+                $result_complete = '';
 
-                if((isset($result_api->value) && $result_api->value !='') && (isset($result_company->value) && $result_company->value != '') && $result_suspended->value != 1 && $result_complete->value == 1){
+                if((isset($result_api->value) && $result_api->value !='') && (isset($result_company->value) && $result_company->value != '') && $result_suspended->value != 1 && $result_complete == 1){
                     echo'
                     <div class="bpc_p_version">
                         You are using a pro version of BPC
@@ -313,7 +354,7 @@ function bpc_dashboard(){
                         </div>
                     </div>
                     ';
-                } elseif((isset($result_api->value) && $result_api->value !='') && (isset($result_company->value) && $result_company->value != '') && $result_suspended->value != 1 && $result_complete->value != 1){
+                } elseif((isset($result_api->value) && $result_api->value !='') && (isset($result_company->value) && $result_company->value != '') && $result_suspended->value != 1 && $result_complete != 1){
                     echo'
                     <div class="bpc_p_version">
                         You are connected to Pro, but action on your account is required and the free version is still in effect. <a href="https://bepopiacompliant.co.za" style="color:#B7191A"; target="_blank"><span style="line-height: 45px; margin: 30px important;"> Fix it now!</span></a>

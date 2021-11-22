@@ -42,6 +42,7 @@ function bpc_active_check() {
 
                 if($go_on == 1){
                     global $wpdb;
+                    $privacy = 1;
                     $table_name = $wpdb->prefix . 'be_popia_compliant_admin';
                     
                     $wpdb->update( $table_name, array( 'value' => 0),array('id'=>3)); 
