@@ -536,7 +536,7 @@ function bpc_notice() {
     $response = wp_remote_get( $url, $args );
 
     $response_code = wp_remote_retrieve_response_code( $response );
-    $server_message = wp_remote_retrieve_body( $response );
+    $data = wp_remote_retrieve_body( $response );
 
     if ( 401 === $response_code ) {
         echo "Unauthorized access";
@@ -547,7 +547,14 @@ function bpc_notice() {
     }
 
     if ( 200 === $response_code ) {
-        // echo "server_message: " . $server_message;
+        $data = json_decode( $data );
+
+        foreach ( $data as $datapoint ) {
+            $server_message = $datapoint->value;
+        }
+        echo "server_message:
+
+        " . $server_message;
     }    
 
     if(isset($server_message)) {
