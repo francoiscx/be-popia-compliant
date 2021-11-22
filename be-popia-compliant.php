@@ -2,8 +2,8 @@
 
 /*
     Plugin Name: Be POPIA Compliant
-    Plugin URI: https://bepopiacompliant.co.za/wp
-    Description: The only plugin that assists with POPIA Compliance for any site that operates in South Africa. Visit <a href="https://bepopiacompliant.co.za/popia" target="_blank">www.bepopiacompliant.co.za/popia</a> for the full legislation.
+    Plugin URI: https://bepopiacompliant.co.za
+    Description: The only plugin that assists with POPIA Compliance for any site that operates in South Africa. Visit <a href="https://bepopiacompliant.co.za/popia/act/index.php" target="_blank">https://bepopiacompliant.co.za/popia/act/index.php</a> for the full legislation.
     Version: 1.0.0
     Author: Web-X
     Author URI: https://web-x.co.za/
@@ -224,7 +224,7 @@ function bpc_insert_data() {
             
             
             array( 'title' => 'Register the Information Officer', 'description' => 'According to the POPI Act, for responsible parties to be compliant with POPIA they are required amongst many actions to appoint and register their Information Officers (IO) with the Information Regulator and apply for Prior Authorisation before processing personal information.', 'type' => -1 ),
-            array( 'title' => 'Appoint a Data Officer', 'description' => 'By default, the CEO or head of the organisation is deligated as the Data Officer, but a Data Officer can formally be appointed to take over these duties from the CEO. Take note that ultimately the CEO is still responsible for the actions of the Data Officer, so make sure you designate someone responsible and competent. Whether or not you are the CEO or head and decide to or not to appoint someone for this duty, you\'d probably want to become better acquainted with the duties at hand, even if it is only as a supervisory position. Visit our <a href=https://bepopiacompliant.co.za/Data_Officer_Guidance_Note>Data Officer Guidance Note</a> page for details.', 'type' => 1 ),
+            array( 'title' => 'Appoint a Data Officer', 'description' => 'By default, the CEO or head of the organisation is deligated as the Data Officer, but a Data Officer can formally be appointed to take over these duties from the CEO. Take note that ultimately the CEO is still responsible for the actions of the Data Officer, so make sure you designate someone responsible and competent. Whether or not you are the CEO or head and decide to or not to appoint someone for this duty, you\'d probably want to become better acquainted with the duties at hand, even if it is only as a supervisory position. Visit our <a href=https://bepopiacompliant.co.za/popia/Data_Officer_Guidance_Note/index.php>Data Officer Guidance Note</a> page for details.', 'type' => 1 ),
             array( 'title' => 'Follow these instructions to register your Information Officer', 'description' => 'Visit the <a href=https://www.justice.gov.za/inforeg/portal.html target="_blank">INFORMATION REGULATOR PORTAL</a> to Register.<br><br> ***At the time of the release of this plugin, the Information Officer has been experiencing technical issues with their Portal, which resulted in it not being accessible***<br><br> - If this is still the case, they provided a <a href=https://www.justice.gov.za/inforeg/docs/forms/InfoRegSA-eForm-InformationOfficersRegistration-2021.pdf target="_blank">PDF Registration</a> as an alternative, that can be filled out in the browser. You\'d still have to print it out in order to sign the document. Thereafter you can send it via email to: <a href=mailto:registration.IR@justice.gov.za>registration.IR@justice.gov.za</a>', 'type' => 1 ),
 
             array( 'title' => 'Active Tasks', 'description' => 'There are some tasks that you have to monitor daily, to stay compliant and to avoid hefty fines or imprisonment.', 'type' => -1 ),
@@ -645,6 +645,7 @@ function bpc_dashboard_checklist(){
         <div class="bpc_wrap">
         
             <h1 style="text-align-last: center;font-size:50px;">POPIA CHECKLIST</h1>
+            <center><h3>Please note that this only take effect for FREE version or when membership to Pro version has lapsed.<h/3></center>
             
             <div class="Progress">
                     <div id="completed_consent" style="display:none;">
@@ -1342,11 +1343,11 @@ function bpc_admin_menus() {
 
     add_menu_page( '', 'POPIA Compliance', 'manage_options', 'be_popia_compliant', 'bpc_dashboard', 'dashicons-yes' );
 
-    if((isset($result_api->value) && $result_api->value !='') && (isset($result_company->value) && $result_company->value != '') && $result_suspended->value != 1){
+    // if((isset($result_api->value) && $result_api->value !='') && (isset($result_company->value) && $result_company->value != '') && $result_suspended->value != 1){
 
-    } else {
+    // } else {
         add_submenu_page ( $top_menu_item, '', 'POPIA Checklist', 'manage_options', 'bpc_checklist', 'bpc_dashboard_checklist');
-    }
+    // }
 
     add_submenu_page ( $top_menu_item, '', 'Cookie Settings', 'manage_options', 'privacy-policy', 'be_popia_compliant_cookie_page_html_content');
 
