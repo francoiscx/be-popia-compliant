@@ -524,29 +524,29 @@ function bpc_notice() {
     $admin_pages = [ 'index.php', 'edit.php', 'plugins.php' ];
 
 
-    $url2 = "https://py.bepopiacompliant.co.za/api/getmessage/";
+    $url = "https://py.bepopiacompliant.co.za/api/getmessage/";
         
-    $args2 = array(
+    $args = array(
         'headers' => array(
             'Content-Type' => 'application/json',
         ),
         'body'    => array(),
     );
 
-    $response2 = wp_remote_get( $url2, $args2 );
+    $response2 = wp_remote_get( $url, $args );
 
-    $response_code2 = wp_remote_retrieve_response_code( $response2 );
-    $server_message = wp_remote_retrieve_body( $response2[-1] );
+    $response_code = wp_remote_retrieve_response_code( $response );
+    $server_message = wp_remote_retrieve_body( $response );
 
-    if ( 401 === $response_code2 ) {
+    if ( 401 === $response_code ) {
         echo "Unauthorized access";
     }
 
-    if ( 200 !== $response_code2 ) {
-        echo " Error in pinging API" . $response_code2;
+    if ( 200 !== $response_code ) {
+        echo " Error in pinging API" . $response_code;
     }
 
-    if ( 200 === $response_code2 ) {
+    if ( 200 === $response_code ) {
         echo "server_message: " . $server_message;
     }    
 
