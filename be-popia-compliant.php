@@ -547,28 +547,26 @@ function bpc_notice() {
     }
 
     if ( 200 === $response_code ) {
-        echo "server_message: " . $server_message;
+        // echo "server_message: " . $server_message;
     }    
 
     if(isset($server_message)) {
         
-    }
+    
+            if ( in_array( $pagenow, $admin_pages ) ) {
+                if(isset($server_message)) {
+                        ?>
+                        <div class="notice notice-warning is-dismissible"> <p>
+                            <?php
+                            echo $server_message;
+                            ?>
+                        </p></div>
+                        <?
 
+                    }
+                }
+            }
 
-
-
-    if ( in_array( $pagenow, $admin_pages ) ) {
-        if(isset($server_message)) {
-            ?>
-            <div class="notice notice-warning is-dismissible"> <p>
-                <?php
-                echo $server_message[-4];
-                ?>
-            </p></div>
-            <?
-
-        }
-    }
 }
 
 add_action( 'admin_notices', 'bpc_notice' );
