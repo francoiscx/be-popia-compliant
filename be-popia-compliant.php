@@ -533,7 +533,7 @@ function bpc_notice() {
         'body'    => array(),
     );
 
-    $response2 = wp_remote_get( $url, $args );
+    $response = wp_remote_get( $url, $args );
 
     $response_code = wp_remote_retrieve_response_code( $response );
     $server_message = wp_remote_retrieve_body( $response );
