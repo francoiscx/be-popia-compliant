@@ -552,12 +552,12 @@ function bpc_notice() {
         foreach ( $data as $datapoint ) {
             $server_message = $datapoint->value;
         }
-        echo "server_message:
+        // echo "server_message:
 
-        " . $server_message;
+        // " . $server_message;
     }    
 
-    if(isset($server_message)) {
+    if(isset($server_message) && ($server_message != 'null')) {
         
     
             if ( in_array( $pagenow, $admin_pages ) ) {
