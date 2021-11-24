@@ -46,6 +46,8 @@ if(!defined('ABSPATH')){
 
 session_start();
 
+$_SESSION['beta'] = 1;
+
 add_action('user_register','add_user_details_to_py');
 
 function add_user_details_to_py($user_id){
@@ -377,7 +379,10 @@ function bpc_dashboard(){
                 } else {
                     echo'
                     <div class="bpc_version">
-                        You are using a free version of BPC
+                        You are using a free version of BPC';
+                        if($_SESSION['beta'] == 1) {echo '! BETA Testers is bussy testing NOW!';}
+                        if($_SESSION['live'] == 1) {echo '! PRO version is now LIVE and available!';}
+                        echo'  
                     </div>
                     <div class="bpc_dashboard_main_content">
                         <div class="bpc_dashboard_logo">
@@ -403,7 +408,7 @@ function bpc_dashboard(){
             </div>
             <div class="bpc_dashboard_two">';
                 
-                if((isset($body)) && (!empty($body)) && ($body != '') && ($body != "[]")){
+                if((isset($body)) && (!empty($body)) && ($body != '') && ($body != "[]") && (($_SESSION['beta'] == 1) ||($_SESSION['live'] == 1))) {
                     global $wpdb;
 
                     $table_name = $wpdb->prefix . 'be_popia_compliant_admin';
@@ -551,6 +556,16 @@ function bpc_notice() {
 
         foreach ( $data as $datapoint ) {
             $server_message = $datapoint->value;
+
+            $word1 = 'LIVE';
+            $word2 = 'notdefined';
+
+            if($_SESSION['beta'] == 1) $word2 = 'BETA';
+            if(strpos($server_message, $word2) !== false)
+            {$_SESSION['beta'] = 1; } else {$_SESSION['beta'] = 0;}
+
+            if(strpos($server_message, $word1) !== false)
+            {$_SESSION['live'] = 1; } else {$_SESSION['live'] = 0;}
         }
         // echo "server_message:
 
