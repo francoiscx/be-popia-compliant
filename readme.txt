@@ -1,3 +1,5 @@
+License: GPLv2 or later
+
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
@@ -13,3 +15,11 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
     
 Copyright 2021 Automatic, Inc.
+
+
+Be POPIA Compliant, Copyright (C) 2021, name of author Be POPIA Compliant comes with
+ABSOLUTELY NO WARRANTY; This is free software, and you are welcome to redistribute
+it under certain conditions;
+
+1145 Combrinck Street, Villieria, Pretoria, South Africa.
+wpplugin@bepopiacompliant.co.za
