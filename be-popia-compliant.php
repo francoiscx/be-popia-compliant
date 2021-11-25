@@ -1,7 +1,7 @@
 <?php
 
 /*
-    Plugin Name: Be POPIA Compliant
+    Plugin Name: Be POPIA Compliant | BETA
     Plugin URI: https://bepopiacompliant.co.za
     Description: The only plugin that assists with POPIA Compliance for any site that operates in South Africa. Visit <a href="https://bepopiacompliant.co.za/popia/act/index.php" target="_blank">https://bepopiacompliant.co.za/popia/act/index.php</a> for the full legislation.
     Version: 1.0.0
@@ -380,7 +380,7 @@ function bpc_dashboard(){
                     echo'
                     <div class="bpc_version">
                         You are using a free version of BPC';
-                        if($_SESSION['beta'] == 1) {echo '! BETA Testers is bussy testing NOW!';}
+                        if($_SESSION['beta'] == 1) {echo '! BETA Testers is busy testing NOW!';}
                         if($_SESSION['live'] == 1) {echo '! PRO version is now LIVE and available!';}
                         echo'  
                     </div>
