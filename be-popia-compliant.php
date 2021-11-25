@@ -27,6 +27,12 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
     
     Copyright 2021 Automatic, Inc.
+
+    Be POPIA Compliant, Copyright (C) 2021, name of author Be POPIA Compliant
+    comes with ABSOLUTELY NO WARRANTY; This is free software,and you are welcome
+    to redistribute it under certain conditions;
+    1145 Combrinck Street, Villieria, Pretoria, South Africa.
+    wpplugin@bepopiacompliant.co.za
 */
 /* ------------------------------------------------------------------------------------------------------------------ 
   ____       _____   ____  _____ _____          _____                      _ _             _                        
