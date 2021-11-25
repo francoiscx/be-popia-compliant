@@ -1,7 +1,7 @@
 <?php
 
 /*
-    Plugin Name: Be POPIA Compliant | BETA
+    Plugin Name: Be POPIA Compliant
     Plugin URI: https://bepopiacompliant.co.za
     Description: The only plugin that assists with POPIA Compliance for any site that operates in South Africa. <a href="https://bepopiacompliant.co.za/popia/act/index.php" target="_blank">https://bepopiacompliant.co.za/popia/act/index.php</a> for the full legislation.
     Version: 1.0.0
