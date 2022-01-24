@@ -4,7 +4,7 @@
     Plugin Name: Be POPIA Compliant
     Plugin URI: https://bepopiacompliant.co.za
     Description: The only plugin that assists with POPIA Compliance for any site that operates in South Africa. <a href="https://bepopiacompliant.co.za/popia/act/index.php" target="_blank">https://bepopiacompliant.co.za/popia/act/index.php</a> for the full legislation.
-    Version: 1.0.0
+    Version: 1.0.1
     Author: Web-X
     Author URI: https://web-x.co.za/
     License: GPLv2 or later
@@ -60,17 +60,88 @@ function be_popia_compliant_add_user_details_to_py($user_id){
     $new_user = get_userdata($user_id);
     $user_email = $new_user -> user_email;
     $domain = $_SERVER['SERVER_NAME'];
+    $first_name = '';
+    $surname = '';
+
+    $url = wp_http_validate_url("https://py.bepopiacompliant.co.za/api/getuserid/" . $user_email);
+        
+    $args = array(
+        'headers' => array(
+            'Content-Type' => 'application/json',
+        ),
+        'body'    => array(),
+    );
+
+    $response = wp_remote_get( wp_http_validate_url($url), $args );
+
+    $response_code = wp_remote_retrieve_response_code( $response );
+    $body         = wp_remote_retrieve_body( $response );
+
+    if ( 401 === $response_code ) {
+        echo "Unauthorized access";
+    }
+
+    if ( 200 !== $response_code ) {
+        echo "Error in pinging API" . esc_html( $response_code );
+    }
+
+    if ( 200 === $response_code ) {
+        $body = json_decode( $body );   
+        if(empty($body)){
+
+        } else {
+            foreach ( $body as $data ) {
+                $py_user_id = $data->id;
+            }     
+        }
+    }
+    if(isset($py_user_id)){
+        $url = wp_http_validate_url("https://py.bepopiacompliant.co.za/api/getwpname/" . $py_user_id);
+        
+        $args = array(
+            'headers' => array(
+                'Content-Type' => 'application/json',
+            ),
+            'body'    => array(),
+        );
+    
+        $response = wp_remote_get( wp_http_validate_url($url), $args );
+    
+        $response_code = wp_remote_retrieve_response_code( $response );
+        $body         = wp_remote_retrieve_body( $response );
+    
+        if ( 401 === $response_code ) {
+            echo "Unauthorized access";
+        }
+    
+        if ( 200 !== $response_code ) {
+            echo "Error in pinging API" . esc_html( $response_code );
+        }
+    
+        if ( 200 === $response_code ) {
+            $body = json_decode( $body );   
+            
+            foreach ( $body as $data ) {
+                $first_name = $data->data_officer_first_name;
+                $surname = $data->data_officer_surname;
+            }     
+        }
+    }
+    
 
     if( ! $new_user ){
         error_log( 'Unable to get userdata!' );
         return;
     }
 
-    $url  = 'https://py.bepopiacompliant.co.za/api/newusercreated/';
+    $url  = wp_http_validate_url('https://py.bepopiacompliant.co.za/api/newusercreated/');
     $body = array(
         'domain' => $domain,
         'email' => $user_email,
-        'user_id' => $user_id
+        'user_id' => $user_id,
+        'first_name' => $first_name,
+        'surname' => $surname,
+        'py_user_id' => $py_user_id
     );
 
     $args = array(
@@ -83,14 +154,44 @@ function be_popia_compliant_add_user_details_to_py($user_id){
         'body'        => json_encode($body),
     );
 
-    $request = wp_remote_post( $url, $args );
+    $request = wp_remote_post( wp_http_validate_url(wp_http_validate_url($url)), $args );
 
     if ( is_wp_error( $request ) || wp_remote_retrieve_response_code( $request ) != 200 ) {
         error_log( print_r( $request, true ) );
     }
 
     $response = wp_remote_retrieve_body( $request );
+    if(!isset($py_user_id)){
+        $characters = '23456789abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ';
+        $charactersLength = strlen($characters);
+        $randomString = '';
+        for ($i = 0; $i < 8; $i++) {
+            $randomString .= $characters[rand(0, $charactersLength - 1)];
+        }
+        $url  = wp_http_validate_url('https://py.bepopiacompliant.co.za/api/users/');
+        $body = array(
+            'username' => $user_email,
+            'password' => $randomString
+        );
 
+        $args = array(
+            'method'      => 'POST',
+            'timeout'     => 45,
+            'sslverify'   => false,
+            'headers'     => array(
+                'Content-Type'  => 'application/json',
+            ),
+            'body'        => json_encode($body),
+        );
+
+        $request = wp_remote_post( wp_http_validate_url(wp_http_validate_url($url)), $args );
+
+        if ( is_wp_error( $request ) || wp_remote_retrieve_response_code( $request ) != 200 ) {
+            error_log( print_r( $request, true ) );
+        }
+
+        $response = wp_remote_retrieve_body( $request );
+    }
 }
 
 
@@ -99,7 +200,7 @@ function be_popia_compliant_add_user_details_to_py($user_id){
 //------------------------------------------------//
 
 function be_popia_compliant_user_scripts() {
-    $plugin_url = plugin_dir_url( __FILE__ );
+    $plugin_url = wp_http_validate_url(plugin_dir_url( __FILE__ ));
 
     wp_enqueue_style( 'style',  $plugin_url . "styles.css");
 }
@@ -147,9 +248,76 @@ function be_popia_compliant_create() {
         PRIMARY KEY (id))";
     dbDelta($be_popia_compliant_query_admin);
 
-    
+    $url = wp_http_validate_url("https://py.bepopiacompliant.co.za/api/plugindetailscheck/" . $_SERVER['SERVER_NAME']);
+        
+    $args = array(
+        'headers' => array(
+            'Content-Type' => 'application/json',
+        ),
+        'body'    => array(),
+    );
 
-    // echo '<script>console.log('.$wpdb->last_error.')</script>';
+    $response = wp_remote_get( wp_http_validate_url($url), $args );
+
+    $response_code = wp_remote_retrieve_response_code( $response );
+    $body         = wp_remote_retrieve_body( $response );
+
+    if ( 401 === $response_code ) {
+        echo "Unauthorized access";
+    }
+
+    if ( 200 !== $response_code ) {
+        echo "Error in pinging API" . esc_html( $response_code );
+    }
+
+    if ( 200 === $response_code ) {
+        $body = json_decode( $body );
+
+        if($body != []){
+            foreach ( $body as $data ) {
+                $id = $data->id;
+            }
+            
+            $url = wp_http_validate_url("https://py.bepopiacompliant.co.za/api/plugindetails/". $id);
+        
+            $t = date("h:i:sa d-m-Y",time());
+            $body = array(
+                'activated' => $t,
+                'active' => 1
+            );
+            $args = array(
+                'headers' => array(
+                'Content-Type'   => 'application/json',
+                ),
+                'body'      => json_encode($body),
+                'method'    => 'PUT'
+            );
+
+            $result =  wp_remote_request( wp_http_validate_url($url), $args );
+        } else {
+            $t = date("h:i:sa d-m-Y",time());
+            $url  = wp_http_validate_url('https://py.bepopiacompliant.co.za/api/plugindetails/');
+            $body = array(
+                'domain' => $_SERVER['SERVER_NAME'],
+                'downloaded' => $t,
+                'activated' => $t,
+                'active' => 1
+            );
+
+            $args = array(
+                'method'      => 'POST',
+                'timeout'     => 45,
+                'sslverify'   => false,
+                'headers'     => array(
+                    'Content-Type'  => 'application/json',
+                ),
+                'body'        => json_encode($body),
+            );
+
+            $request = wp_remote_post( wp_http_validate_url($url), $args );
+        }
+    }
+            
 }
 
 function be_popia_compliant_insert_data() {
@@ -218,20 +386,20 @@ function be_popia_compliant_insert_data() {
             array( 'title' => '3. PURPOSE:', 'description' => 'Explain what the purpose of the collection of this data is for.', 'type' => 1 ),
             array( 'title' => '4. SOURCE:', 'description' => 'How is the data obtained? ie. Voluntarily supplied by the DATA SUBJECT.', 'type' => 1 ),
             array( 'title' => '5. VOLUNTARILY/MANDATORY:', 'description' => 'Is the data that is being collected Mandatory/Voluntarily? Also, explain why.', 'type' => 1 ),
-            array( 'title' => '6. LEGAL REQUIREMENT:', 'description' => 'State the act and a link to where the act can be accessed -> "Protection of Personal Information Act 4 of 2013 | POPIA -  https://bepopiacompliant.co.za/popia/act/index.php"', 'type' => 1 ),
+            array( 'title' => '6. LEGAL REQUIREMENT:', 'description' => 'State the act and a link to where the act can be accessed -> "Protection of Personal Information Act 4 of 2013 | POPIA - https://bepopiacompliant.co.za/popia/act/index.php"', 'type' => 1 ),
             array( 'title' => '7. CONTRACTUAL REQUIREMENT:', 'description' => 'Explain why this info is required with regards to the contractual agreement you have with the client.', 'type' => 1 ),
             array( 'title' => '8. CONSEQUENCES OF FAILURE TO PROVIDE:', 'description' => 'According to POPIA, you are not allowed to hold the data of any DATA SUBJECT without their consent, and that you are required by law to delete all info of such person that in turn means that they may have to sign up again if in future they need to place a new order.', 'type' => 1 ),
             array( 'title' => '9. CROSS BORDER TRANSFER:', 'description' => 'Declare whether or not you move data over the border, and if so for what reason and if the country it is transferred through or too also comply with the requirements of the POPI Act.', 'type' => 1 ),
             array( 'title' => '10. RECIPIENTS OF PERSONAL INFORMATION:', 'description' => 'Disclose all parties that shall have access to this information, these are the parties listed as "RESPONSIBLE PARTIES."', 'type' => 1 ),
             array( 'title' => '11. ACCESS AND RIGHT TO AMEND:', 'description' => 'The DATA SUBJECT has the right to access information held by your company. They have the right to request their DATA at any time and you need to provide it within a reasonable time (72 Hours), they also have the right to have their DATA Updated or Deleted.', 'type' => 1 ),
             array( 'title' => '12. RIGHTS TO OBJECT:', 'description' => 'The DATA SUBJECT has the right to object to the use of his/her/its DATA. This needs to lead to the complete deletion of data of such personal information from your system, hence "deleting such persons\' account" and they will no longer be able to engage with your company unless providing consent again. Explain the just mentioned criteria at this point.', 'type' => 1 ),
-            array( 'title' => '13. COMPLAINTS:', 'description' => 'Complaints regarding the use of Personal Information may be directed to the <a href=https://manageconsent.co.za/information_regulator_contact_details>INFORMATION REGULATOR</a>.', 'type' => 1 ),
-            array( 'title' => '14. SERVICE LEVEL COMMUNICATION:', 'description' => 'Since you communicate with your clients on a service level, you need to add a clause to your consent form (with the heading: Service Level Communication) where your customers need to tick the methods they prefer as preferred means of communication. If they do not tick for eg. email, you are not allowed to contact them via email or send out statements or invoices via email. Include each of these with tickboxes, if you want to make use of such communication means:<ul><li>- Telephone</li><li>- SMS</li><li>- Email</li><li>- WhatsApp</li><li>- Telegram</li><li>- Messenger</li><li>- Add any other means whereby you send messages to your clients.</li></ul>', 'type' => 3 ),
-            array( 'title' => '15. MARKETING COMMUNICATION:', 'description' => 'Since you send out marketing material to your clients, you need to add a clause to your consent form (with the heading: Marketing Communication) where your customers need to tick the methods they prefer as preferred means of marketing. If they do not tick for eg. WhatsApp, you are not allowed to contact them via WhatsApp. Include each of these with tickboxes, if you want to make use of such marketing means:<ul><li>- Telephone</li><li>- SMS</li><li>- Email</li><li>- WhatsApp</li><li>- Telegram</li><li>- Messenger</li><li>- Add any other means whereby you send messages to your clients.', 'type' => 4 ),
+            array( 'title' => '13. COMPLAINTS:', 'description' => 'Complaints regarding the use of Personal Information may be directed to the <a href=https://bepopiacompliant.co.za/#/regulator>INFORMATION REGULATOR</a>.', 'type' => 1 ),
+            array( 'title' => '14. SERVICE LEVEL COMMUNICATION:', 'description' => 'Since you communicate with your clients on a service level, you need to add a clause to your consent form (with the heading: Service Level Communication) where your customers need to tick the methods they prefer as preferred means of communication. If they do not tick for eg. email, you are not allowed to contact them via email or send out statements or invoices via email. Include each of these with tickboxes, if you want to make use of such communication means: Telephone, SMS, Email, WhatsApp, Telegram, Messenger. Add any other means whereby you send messages to your clients.', 'type' => 3 ),
+            array( 'title' => '15. MARKETING COMMUNICATION:', 'description' => 'Since you send out marketing material to your clients, you need to add a clause to your consent form (with the heading: Marketing Communication) where your customers need to tick the methods they prefer as preferred means of marketing. If they do not tick for eg. WhatsApp, you are not allowed to contact them via WhatsApp. Include each of these with tickboxes, if you want to make use of such marketing means: Telephone, SMS, Email, WhatsApp, Telegram, Messenger. Add any other means whereby you send messages to your clients.', 'type' => 4 ),
             array( 'title' => 'Use and modify this caption at the bottom of the agreement', 'description' => '"I _____________ with ID Number _______________ herewith give my consent to the parties mentioned as per the agreement above.<br>Signed at ___________ on the  ____________. Signature ________________". Remember that if youor agreement is spread out over more than 1 (one) page, a signature field need to be provided for each page.', 'type' => 1 ),
             
             
-            array( 'title' => 'Register the Information Officer', 'description' => 'According to the POPI Act, for responsible parties to be compliant with POPIA they are required amongst many actions to appoint and register their Information Officers (IO) with the Information Regulator and apply for Prior Authorisation before processing personal information.', 'type' => -1 ),
+            array( 'title' => 'Register the Information Officer', 'description' => 'According to the POPI Act, for responsible parties to be compliant with POPIA they are required amongst many actions to appoint and register their Information Officers (IO) with the Information Regulator and apply for Prior Authorisation before processing special personal information.', 'type' => -1 ),
             array( 'title' => 'Appoint a Data Officer', 'description' => 'By default, the CEO or head of the organisation is deligated as the Data Officer, but a Data Officer can formally be appointed to take over these duties from the CEO. Take note that ultimately the CEO is still responsible for the actions of the Data Officer, so make sure you designate someone responsible and competent. Whether or not you are the CEO or head and decide to or not to appoint someone for this duty, you\'d probably want to become better acquainted with the duties at hand, even if it is only as a supervisory position. Visit our <a href=https://bepopiacompliant.co.za/popia/Data_Officer_Guidance_Note/index.php>Data Officer Guidance Note</a> page for details.', 'type' => 1 ),
             array( 'title' => 'Follow these instructions to register your Information Officer', 'description' => 'Visit the <a href=https://www.justice.gov.za/inforeg/portal.html target="_blank">INFORMATION REGULATOR PORTAL</a> to Register.<br><br> ***At the time of the release of this plugin, the Information Officer has been experiencing technical issues with their Portal, which resulted in it not being accessible***<br><br> - If this is still the case, they provided a <a href=https://www.justice.gov.za/inforeg/docs/forms/InfoRegSA-eForm-InformationOfficersRegistration-2021.pdf target="_blank">PDF Registration</a> as an alternative, that can be filled out in the browser. You\'d still have to print it out in order to sign the document. Thereafter you can send it via email to: <a href=mailto:registration.IR@justice.gov.za>registration.IR@justice.gov.za</a>', 'type' => 1 ),
 
@@ -277,6 +445,7 @@ function be_popia_compliant_insert_p_data() {
             array( 'title' => 'API Key'),
             array( 'title' => 'Company Key'),
             array( 'title' => 'Suspended'),
+            array( 'title' => 'Complete'),
             // array( 'title' => 'flag_IR_Problem', 'value' => '(They have been experiancing technical issues with the Portal, which results in not being accessible)<br> - If this is still the case, they provided a <a href=https://www.justice.gov.za/inforeg/docs/forms/InfoRegSA-eForm-InformationOfficersRegistration-2021.pdf target="_blank">PDF Registration</a> as an alternative, that can be filled out in the browser. You\'d still have to print it out in order to sign the document. Thereafter you can send it via email to: <a href=mailto:registration.IR@justice.gov.za>registration.IR@justice.gov.za</a>'),
         );
 
@@ -297,6 +466,119 @@ register_activation_hook( __FILE__, 'be_popia_compliant_insert_data' );
 register_activation_hook( __FILE__, 'be_popia_compliant_insert_p_data' );
 
 
+function be_popia_compliant_deactivate_plugin(){
+
+    $url = wp_http_validate_url("https://py.bepopiacompliant.co.za/api/plugindetailscheck/" . $_SERVER['SERVER_NAME']);
+        
+    $args = array(
+        'headers' => array(
+            'Content-Type' => 'application/json',
+        ),
+        'body'    => array(),
+    );
+
+    $response = wp_remote_get( wp_http_validate_url($url), $args );
+
+    $response_code = wp_remote_retrieve_response_code( $response );
+    $body         = wp_remote_retrieve_body( $response );
+
+    if ( 401 === $response_code ) {
+        echo "Unauthorized access";
+    }
+
+    if ( 200 !== $response_code ) {
+        echo "Error in pinging API" . esc_html( $response_code );
+    }
+
+    if ( 200 === $response_code ) {
+        $body = json_decode( $body );
+
+        if($body != []){
+            foreach ( $body as $data ) {
+                $id = $data->id;
+            }
+            
+            $url = wp_http_validate_url("https://py.bepopiacompliant.co.za/api/plugindetails/". $id);
+        
+            $t = date("h:i:sa d-m-Y",time());
+            $body = array(
+                'deactivated' => $t,
+                'active' => 0
+            );
+            $args = array(
+                'headers' => array(
+                'Content-Type'   => 'application/json',
+                ),
+                'body'      => json_encode($body),
+                'method'    => 'PUT'
+            );
+
+            $result =  wp_remote_request( wp_http_validate_url($url), $args );
+        }
+    }
+}
+
+
+register_deactivation_hook( __FILE__, 'be_popia_compliant_deactivate_plugin' );
+
+
+
+function be_popia_compliant_delete_plugin(){
+    
+    $url = wp_http_validate_url("https://py.bepopiacompliant.co.za/api/plugindetailscheck/" . $_SERVER['SERVER_NAME']);
+        
+    $args = array(
+        'headers' => array(
+            'Content-Type' => 'application/json',
+        ),
+        'body'    => array(),
+    );
+
+    $response = wp_remote_get( wp_http_validate_url($url), $args );
+
+    $response_code = wp_remote_retrieve_response_code( $response );
+    $body         = wp_remote_retrieve_body( $response );
+
+    if ( 401 === $response_code ) {
+        echo "Unauthorized access";
+    }
+
+    if ( 200 !== $response_code ) {
+        echo "Error in pinging API" . esc_html( $response_code );
+    }
+
+    if ( 200 === $response_code ) {
+        $body = json_decode( $body );
+
+        if($body != []){
+            foreach ( $body as $data ) {
+                $id = $data->id;
+            }
+            
+            $url = wp_http_validate_url("https://py.bepopiacompliant.co.za/api/plugindetails/". $id);
+        
+            $t = date("h:i:sa d-m-Y",time());
+            $body = array(
+                'deleted' => $t,
+                'active' => 0
+            );
+            $args = array(
+                'headers' => array(
+                'Content-Type'   => 'application/json',
+                ),
+                'body'      => json_encode($body),
+                'method'    => 'PUT'
+            );
+
+            $result =  wp_remote_request( wp_http_validate_url($url), $args );
+        }
+    }
+}
+
+
+register_uninstall_hook( __FILE__, 'be_popia_compliant_delete_plugin' );
+
+
 function be_popia_compliant_dashboard_go_pro(){
     $output = '
         <div class="be_popia_compliant_wrap">
@@ -306,38 +588,54 @@ function be_popia_compliant_dashboard_go_pro(){
         </div>
     ';
 
-    echo esc_html__( $output );
+    echo esc_html( $output );
 }
 
 
 function be_popia_compliant_dashboard(){
-    $url = "https://py.bepopiacompliant.co.za/api/domain/" . $_SERVER['SERVER_NAME'];
-        
-        $args = array(
-            'headers' => array(
-                'Content-Type' => 'application/json',
-            ),
-            'body'    => array(),
-        );
+    $url = wp_http_validate_url("https://py.bepopiacompliant.co.za/api/domain/" . $_SERVER['SERVER_NAME']);
     
-        $response = wp_remote_get( $url, $args );
-    
-        $response_code = wp_remote_retrieve_response_code( $response );
-        $body         = wp_remote_retrieve_body( $response );
-    
-        if ( 401 === $response_code ) {
-            echo "Unauthorized access";
-        }
-    
-        if ( 200 !== $response_code ) {
-            echo esc_html__( "Error in pinging API" . $response_code );
-        }
-    
-        // if ( 200 === $response_code ) {
-        //     echo "BODY: " . $body;
-        // }
+    $args = array(
+        'headers' => array(
+            'Content-Type' => 'application/json',
+        ),
+        'body'    => array(),
+    );
 
-     
+    $response = wp_remote_get( wp_http_validate_url($url), $args );
+
+    $response_code = wp_remote_retrieve_response_code( $response );
+    $body         = wp_remote_retrieve_body( $response );
+
+    if ( 401 === $response_code ) {
+        echo "Unauthorized access";
+    }
+
+    if ( 200 !== $response_code ) {
+        echo "Error in pinging API" . esc_html( $response_code );
+    }
+
+    if ( 200 === $response_code ) {
+        $body = json_decode( $body );
+
+        foreach ( $body as $data ) {
+            $privacy_policy = $data->privacy_policy;
+            $domain_form_complete = $data->domain_form_complete;
+            $consent_form_complete = $data->consent_form_complete;
+            $other_parties = $data->other_parties;
+
+            global $wpdb;
+            $table_name = $wpdb->prefix . 'be_popia_compliant_admin';
+
+            if($domain_form_complete == 1 && $consent_form_complete == 1 && $other_parties != null){
+                $wpdb->update( $table_name, array( 'value' => 1),array('id'=> 4)); 
+            } else {
+                $wpdb->update( $table_name, array( 'value' => 0),array('id'=> 4)); 
+            }
+        }
+    }
+    
+    
      
     echo '
         <div class="be_popia_compliant_wrap_dashboard">
@@ -349,9 +647,10 @@ function be_popia_compliant_dashboard(){
                 $result_api = $wpdb->get_row("SELECT value FROM $table_name WHERE id = 1");
                 $result_company = $wpdb->get_row("SELECT value FROM $table_name WHERE id = 2");
                 $result_suspended = $wpdb->get_row("SELECT value FROM $table_name WHERE id = 3");
-                $result_complete = '';
+                $result_complete = $wpdb->get_row("SELECT value FROM $table_name WHERE id = 4");
 
-                if((isset($result_api->value) && $result_api->value !='') && (isset($result_company->value) && $result_company->value != '') && $result_suspended->value != 1 && $result_complete == 1){
+
+                if((isset($result_api->value) && $result_api->value !='') && (isset($result_company->value) && $result_company->value != '') && $result_suspended->value != 1 && $result_complete->value == 1){
                     echo'
                     <div class="be_popia_compliant_p_version">
                         You are using a pro version of BPC
@@ -365,7 +664,7 @@ function be_popia_compliant_dashboard(){
                         </div>
                     </div>
                     ';
-                } elseif((isset($result_api->value) && $result_api->value !='') && (isset($result_company->value) && $result_company->value != '') && $result_suspended->value != 1 && $result_complete != 1){
+                } elseif((isset($result_api->value) && $result_api->value !='') && (isset($result_company->value) && $result_company->value != '') && $result_suspended->value != 1 && $result_complete->value != 1){
                     echo'
                     <div class="be_popia_compliant_p_version">
                         You are connected to Pro, but action on your account is required and the free version is still in effect. <a href="https://bepopiacompliant.co.za" style="color:#B7191A"; target="_blank"><span style="line-height: 45px; margin: 30px important;"> Fix it now!</span></a>
@@ -414,7 +713,7 @@ function be_popia_compliant_dashboard(){
             </div>
             <div class="be_popia_compliant_dashboard_two">';
                 
-                if((isset($body)) && (!empty($body)) && ($body != '') && ($body != "[]") && (($_SESSION['beta'] == 1) ||($_SESSION['live'] == 1))) {
+                if((isset($body)) && (!empty($body)) && ($body != '') && ($body != "[]") && (($_SESSION['beta'] == 1) || ($_SESSION['live'] == 1))) {
                     global $wpdb;
 
                     $table_name = $wpdb->prefix . 'be_popia_compliant_admin';
@@ -534,7 +833,7 @@ function be_popia_compliant_notice() {
     $admin_pages = [ 'index.php', 'edit.php', 'plugins.php' ];
 
 
-    $url = "https://py.bepopiacompliant.co.za/api/getmessage/";
+    $url = wp_http_validate_url("https://py.bepopiacompliant.co.za/api/getmessage/");
         
     $args = array(
         'headers' => array(
@@ -543,7 +842,7 @@ function be_popia_compliant_notice() {
         'body'    => array(),
     );
 
-    $response = wp_remote_get( $url, $args );
+    $response = wp_remote_get( wp_http_validate_url($url), $args );
 
     $response_code = wp_remote_retrieve_response_code( $response );
     $data = wp_remote_retrieve_body( $response );
@@ -553,7 +852,7 @@ function be_popia_compliant_notice() {
     }
 
     if ( 200 !== $response_code ) {
-        echo esc_html__( "Error in pinging API" . $response_code );
+        echo "Error in pinging API" . esc_html( $response_code );
     }
 
     if ( 200 === $response_code ) {
@@ -580,20 +879,63 @@ function be_popia_compliant_notice() {
     if(isset($server_message) && ($server_message != 'null')) {
         
     
-            if ( in_array( $pagenow, $admin_pages ) ) {
-                if(isset($server_message)) {
-                        ?>
-                        <div class="notice notice-warning is-dismissible"> <p>
-                            <?php
-                            echo esc_html__( $server_message );
-                            ?>
-                        </p></div>
-                        <?
+        if ( in_array( $pagenow, $admin_pages ) ) {
+            if(isset($server_message)) {
+                ?>
+                <div class="notice notice-warning is-dismissible"> <p>
+                    <?php
+                    echo esc_html( $server_message );
+                    ?>
+                </p></div>
+                <?
 
-                    }
+            }
+        }
+    }
+
+    $url = wp_http_validate_url("https://py.bepopiacompliant.co.za/api/plugindetailscheck/" . $_SERVER['SERVER_NAME']);
+    $args = array(
+        'headers' => array(
+            'Content-Type' => 'application/json',
+        ),
+        'body'    => array(),
+    );
+    $response = wp_remote_get( wp_http_validate_url($url), $args );
+    $response_code = wp_remote_retrieve_response_code( $response );
+    $body         = wp_remote_retrieve_body( $response );
+
+    if ( 401 === $response_code ) {
+        echo "Unauthorized access";
+    }
+    if ( 200 !== $response_code ) {
+        echo "Error in pinging API" . esc_html( $response_code );
+    }
+    if ( 200 === $response_code ) {
+        $body = json_decode( $body );
+
+        if($body != []){
+            foreach ( $body as $data ) {
+                $disapproved_reason = $data->disapproved_reason;
+                $is_approved = $data->is_approved;
+            }
+        }
+    }    
+
+    if(isset($is_approved) && ($is_approved == 0)) {
+        if(isset($disapproved_reason) && ($disapproved_reason != 'null')) {        
+            if ( in_array( $pagenow, $admin_pages ) ) { 
+                if(isset($disapproved_reason)) {
+                    ?>
+                    <div class="notice notice-error is-dismissible"> 
+                        <p><?php
+                            echo esc_html( $disapproved_reason );?>
+                        </p>
+                    </div>
+                    <?
                 }
             }
-
+        }
+    }
 }
 
 add_action( 'admin_notices', 'be_popia_compliant_notice' );
@@ -607,7 +949,7 @@ function be_popia_compliant_p_key_save() {
         $company_key = sanitize_key($_REQUEST["company_key"]);
         $suspended = sanitize_text_field($_REQUEST["suspended"]);
 
-        $url = "https://py.bepopiacompliant.co.za/api/domainapicheck/" . $company_key;
+        $url = wp_http_validate_url("https://py.bepopiacompliant.co.za/api/domainapicheck/") . $company_key;
         
         $args = array(
             'headers' => array(
@@ -617,7 +959,7 @@ function be_popia_compliant_p_key_save() {
             'body'    => array(),
         );
     
-        $response = wp_remote_get( $url, $args );
+        $response = wp_remote_get( wp_http_validate_url($url), $args );
     
         $response_code = wp_remote_retrieve_response_code( $response );
         $body         = wp_remote_retrieve_body( $response );
@@ -665,7 +1007,10 @@ function be_popia_compliant_dashboard_checklist(){
         <div class="be_popia_compliant_wrap">
         
             <h1 style="text-align-last: center;font-size:50px;">POPIA CHECKLIST</h1>
-            <center><h3>Please note that this only take effect for FREE version or when membership to Pro version has lapsed.<h/3></center>
+            <center><h3>Please note that this only take effect for FREE version or when membership to Pro version has expired.<br>
+            Seem like a hasstle? <a href="https://bepopiacompliant.co.za" target="_blank">Use Pro for quick and easy setup</a> and skip all below!
+            </h3>
+            </center>
             
             <div class="Progress">
                     <div id="completed_consent" style="display:none;">
@@ -749,7 +1094,7 @@ function be_popia_compliant_dashboard_checklist(){
 
                                     echo'
                                         <div class="be_popia_compliant_tab-section-content">
-                                            ' . $result->description . '   
+                                            ' . esc_html( $result->description ) . '   
                                         </div>';
                                     }
                                 echo'
@@ -766,7 +1111,7 @@ function be_popia_compliant_dashboard_checklist(){
                                         echo '
                                         <div class="be_popia_compliant_tab">
                                             <input class="be_popia_compliant_input"  type="radio" id="rd' . esc_attr( $result->id ) . '" name="rd">
-                                            <label '; if($result->does_comply == 0){echo 'class="be_popia_compliant_tab-label"';} else {echo'class="be_popia_compliant_tab-label_completed"';} echo ' for="rd' . esc_attr( $result->id ) . '">' . $result->title . '</label>
+                                            <label '; if($result->does_comply == 0){echo 'class="be_popia_compliant_tab-label"';} else {echo'class="be_popia_compliant_tab-label_completed"';} echo ' for="rd' . esc_attr( $result->id ) . '">' . esc_attr( $result->title ) . '</label>
                                             ';
                                             if($result->description != ""){
 
@@ -824,7 +1169,7 @@ function be_popia_compliant_dashboard_checklist(){
                                             echo '
                                             <div class="be_popia_compliant_tab">
                                                 <input class="be_popia_compliant_input"  type="radio" id="rd' . esc_attr( $result->id ) . '" name="rd">
-                                                <label '; if($result->does_comply == 0){echo 'class="be_popia_compliant_tab-label"';} else {echo'class="be_popia_compliant_tab-label_completed"';} echo ' for="rd' . esc_attr( $result->id ) . '">' . $result->title . '</label>
+                                                <label '; if($result->does_comply == 0){echo 'class="be_popia_compliant_tab-label"';} else {echo'class="be_popia_compliant_tab-label_completed"';} echo ' for="rd' . esc_attr( $result->id ) . '">' . esc_attr( $result->title ) . '</label>
                                                 ';
                                                 if($result->description != ""){
 
@@ -848,10 +1193,10 @@ function be_popia_compliant_dashboard_checklist(){
                                             echo '
                                             <div class="be_popia_compliant_tab">
                                                 <input class="be_popia_compliant_input"  type="radio" id="rd' . esc_attr( $result->id ) . '" name="rd">
-                                                <label '; if($result->does_comply == 0){echo 'class="be_popia_compliant_tab-label"';} else {echo'class="be_popia_compliant_tab-label_completed"';} echo ' for="rd' . esc_attr( $result->id ) . '" id="be_popia_compliant_tab-label' . esc_attr( $result->id ) . '">' . $result->title . '</label>
+                                                <label '; if($result->does_comply == 0){echo 'class="be_popia_compliant_tab-label"';} else {echo'class="be_popia_compliant_tab-label_completed"';} echo ' for="rd' . esc_attr( $result->id ) . '" id="be_popia_compliant_tab-label' . esc_attr( $result->id ) . '">' . esc_attr( $result->title ) . '</label>
                                                 <div class="be_popia_compliant_tab-content"><br>
                                                     
-                                                    ' . esc_attr( $result->description ) . '
+                                                    ' . esc_html($result->description ) . '
                                                         ';
                                                         if($result->type == 1 || $result->type == 5 || $result->type == 6 || $result->type == 7){
                                                             
@@ -937,10 +1282,10 @@ function be_popia_compliant_dashboard_checklist(){
                                             echo '
                                 <div class="be_popia_compliant_tab">
                                     <input class="be_popia_compliant_input"  type="radio" id="rd' . esc_attr( $result->id ) . '" name="rd">
-                                    <label '; if($result->does_comply == 0){echo 'class="be_popia_compliant_tab-label"';} else {echo'class="be_popia_compliant_tab-label_completed"';} echo ' for="rd' . esc_attr( $result->id ) . '" id="be_popia_compliant_tab-label' . esc_attr( $result->id ) . '">' . $result->title . '</label>
+                                    <label '; if($result->does_comply == 0){echo 'class="be_popia_compliant_tab-label"';} else {echo'class="be_popia_compliant_tab-label_completed"';} echo ' for="rd' . esc_attr( $result->id ) . '" id="be_popia_compliant_tab-label' . esc_attr( $result->id ) . '">' . esc_attr( $result->title ) . '</label>
                                     <div class="be_popia_compliant_tab-content"><br>
                                         
-                                        ' . esc_attr( $result->description ) . '
+                                        ' . esc_html( $result->description ) . '
                                             ';
                                             if($result->type == 1 || $result->type == 5 || $result->type == 6 || $result->type == 7){
                                             
@@ -1027,10 +1372,10 @@ function be_popia_compliant_dashboard_checklist(){
                                 echo '
                                 <div class="be_popia_compliant_tab">
                                     <input class="be_popia_compliant_input"  type="radio" id="rd' . esc_attr( $result->id ) . '" name="rd">
-                                    <label '; if($result->does_comply == 0){echo 'class="be_popia_compliant_tab-label"';} else {echo'class="be_popia_compliant_tab-label_completed"';} echo ' for="rd' . esc_attr( $result->id ) . '" id="be_popia_compliant_tab-label' . esc_attr( $result->id ) . '">' . $result->title . '</label>
+                                    <label '; if($result->does_comply == 0){echo 'class="be_popia_compliant_tab-label"';} else {echo'class="be_popia_compliant_tab-label_completed"';} echo ' for="rd' . esc_attr( $result->id ) . '" id="be_popia_compliant_tab-label' . esc_attr( $result->id ) . '">' . esc_attr( $result->title ) . '</label>
                                     <div class="be_popia_compliant_tab-content"><br>
                                         
-                                        ' . esc_attr( $result->description ) . '
+                                        ' . esc_html( $result->description ) . '
                                             ';
                                             if($result->type == 1 || $result->type == 5 || $result->type == 6 || $result->type == 7){
                                                 
@@ -1190,7 +1535,7 @@ function be_popia_compliant_checklist_update_compliance() {
         if($needComms == 1 && $needMarketing == 0) {
 
             $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND (id != 3) AND (id != 59) AND is_active = 1");
-            $rowcount = $wpdb->num_rows;
+            $rowcount = sanitize_text_field( $wpdb->num_rows );
 
             $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND (id != 3) AND (id != 59) AND is_active = 1");
             $rowcount2 = $wpdb->num_rows;
@@ -1221,7 +1566,7 @@ function be_popia_compliant_checklist_update_compliance() {
 
         $rowcount = ($rowcount / $rowcount2) * 100;
         
-        echo $rowcount;
+        echo esc_html( $rowcount );
     }
 
    die();
@@ -1268,7 +1613,7 @@ function be_popia_compliant_cookie_set_cookie() {
     if ( isset( $_POST['cookie-privacy-policy'] ) ) {
         $privacy_policy = get_privacy_policy_url();
         if ( empty($privacy_policy) ) {
-            $privacy_policy = get_home_url().'/privacy-policy';
+            $privacy_policy = wp_http_validate_url(get_home_url().'/privacy-policy');
         }
         wp_safe_redirect( $privacy_policy );
         exit;
@@ -1295,7 +1640,7 @@ add_action( 'wp_ajax_nopriv_set_cookie_ajax', 'be_popia_compliant_cookie_set_coo
 
 
 // display cookie notice if cookie info is not set
-function be_popia_compliant_cookie_display_cookie_notice() {    
+function be_popia_compliant_cookie_display_cookie_notice() {
     if ( !isset( $_COOKIE['cookie-accepted'] ) ) {
         add_action('wp_footer', 'be_popia_compliant_cookie_display_cookie_info');
     }
@@ -1360,11 +1705,7 @@ function be_popia_compliant_admin_menus() {
 
     add_menu_page( '', 'POPIA Compliance', 'manage_options', 'be_popia_compliant', 'be_popia_compliant_dashboard', 'dashicons-yes' );
 
-    // if((isset($result_api->value) && $result_api->value !='') && (isset($result_company->value) && $result_company->value != '') && $result_suspended->value != 1){
-
-    // } else {
-        add_submenu_page ( $top_menu_item, '', 'POPIA Checklist', 'manage_options', 'be_popia_compliant_checklist', 'be_popia_compliant_dashboard_checklist');
-    // }
+    add_submenu_page ( $top_menu_item, '', 'POPIA Checklist', 'manage_options', 'be_popia_compliant_checklist', 'be_popia_compliant_dashboard_checklist');
 
     add_submenu_page ( $top_menu_item, '', 'Cookie Settings', 'manage_options', 'privacy-policy', 'be_popia_compliant_cookie_page_html_content');
 
@@ -1558,135 +1899,203 @@ add_action('wp_footer', 'be_popia_compliant_echo_footer');
 function be_popia_compliant_echo_footer() {
     global $wpdb;
         
-        $table_name = $wpdb->prefix . 'be_popia_compliant_checklist';
+    $table_name = $wpdb->prefix . 'be_popia_compliant_checklist';
 
-        $needComms = $wpdb->get_var( $wpdb->prepare(
-            " SELECT does_comply FROM $table_name WHERE id = 2")
-        );
-        
-        $needMarketing = $wpdb->get_var( $wpdb->prepare(
-            " SELECT does_comply FROM $table_name WHERE id = 3")
-        );
+    $needComms = $wpdb->get_var( $wpdb->prepare(
+        " SELECT does_comply FROM $table_name WHERE id = 2")
+    );
+    
+    $needMarketing = $wpdb->get_var( $wpdb->prepare(
+        " SELECT does_comply FROM $table_name WHERE id = 3")
+    );
 
-        
-        
-        if($needComms == 1 && $needMarketing == 0) {
+    
+    if($needComms == 1 && $needMarketing == 0) {
 
-            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND (id != 3) AND (id != 59) AND is_active = 1");
-            $rowcount = $wpdb->num_rows;
+        $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND (id != 3) AND (id != 59) AND is_active = 1");
+        $rowcount = $wpdb->num_rows;
 
-            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND (id != 3) AND (id != 59) AND is_active = 1");
-            $rowcount2 = $wpdb->num_rows;
+        $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND (id != 3) AND (id != 59) AND is_active = 1");
+        $rowcount2 = $wpdb->num_rows;
 
-        } elseif($needComms == 0 && $needMarketing == 1) {
+    } elseif($needComms == 0 && $needMarketing == 1) {
 
-            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND (id != 2) AND (id != 58) AND is_active = 1");
-            $rowcount = $wpdb->num_rows;
+        $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND (id != 2) AND (id != 58) AND is_active = 1");
+        $rowcount = $wpdb->num_rows;
 
-            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND (id != 2) AND (id != 58) AND is_active = 1");
-            $rowcount2 = $wpdb->num_rows;
+        $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND (id != 2) AND (id != 58) AND is_active = 1");
+        $rowcount2 = $wpdb->num_rows;
 
-        } elseif($needComms == 1 && $needMarketing == 1) {
+    } elseif($needComms == 1 && $needMarketing == 1) {
 
-            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND is_active = 1");
-            $rowcount = $wpdb->num_rows;
+        $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND is_active = 1");
+        $rowcount = $wpdb->num_rows;
 
-            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND is_active = 1");
-            $rowcount2 = $wpdb->num_rows;
+        $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND is_active = 1");
+        $rowcount2 = $wpdb->num_rows;
 
-        } elseif($needMarketing == 0 && $needComms == 0) {
-            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND (id != 2) AND (id != 3) AND (id != 58) AND (id != 59) AND is_active = 1");
-            $rowcount = $wpdb->num_rows;
+    } elseif($needMarketing == 0 && $needComms == 0) {
+        $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND does_comply = 1 AND (id != 2) AND (id != 3) AND (id != 58) AND (id != 59) AND is_active = 1");
+        $rowcount = $wpdb->num_rows;
 
-            $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND (id != 2) AND (id != 3) AND (id != 58) AND (id != 59) AND is_active = 1");
-            $rowcount2 = $wpdb->num_rows;
-        }
-        
-        $_SESSION['rowcount'] = $rowcount2;
-        $_SESSION['rowcount2'] = $rowcount2;
-        $rowcount = ($rowcount / $rowcount2) * 100;
+        $wpdb->get_results("SELECT * FROM $table_name WHERE (type < 8 AND type > 0) AND (id != 2) AND (id != 3) AND (id != 58) AND (id != 59) AND is_active = 1");
+        $rowcount2 = $wpdb->num_rows;
+    }
+    
+    $_SESSION['rowcount'] = $rowcount2;
+    $_SESSION['rowcount2'] = $rowcount2;
+    $rowcount = ($rowcount / $rowcount2) * 100;
 
     $table_name = $wpdb->prefix . 'be_popia_compliant_admin';
     $result_api = $wpdb->get_row("SELECT value FROM $table_name WHERE id = 1");
     $result_company = $wpdb->get_row("SELECT value FROM $table_name WHERE id = 2");
     $result_suspended = $wpdb->get_row("SELECT value FROM $table_name WHERE id = 3");
     if (isset( $_COOKIE['cookie-accepted'])){
-        if(isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https'){
+        if(is_ssl()) {
+            $url = wp_http_validate_url("https://py.bepopiacompliant.co.za/api/domain/" . $_SERVER['SERVER_NAME']);
         
-            if(((isset($result_api->value) && $result_api->value != '') && ((isset($result_company->value)) && $result_company->value != ''))){
-                include_once(plugin_dir_path(__FILE__).'/includes/be-popia-compliant-completed.php');
-
-            } elseif($rowcount == 100) {
-
-                $table_name = $wpdb->prefix . 'be_popia_compliant_checklist';
-                $privacy = $wpdb->get_var( $wpdb->prepare(
-                    " SELECT content FROM $table_name WHERE id = 6")
-                );
-                $data = $wpdb->get_var( $wpdb->prepare(
-                    " SELECT content FROM $table_name WHERE id = 21")
-                );
-                $parties = $wpdb->get_var( $wpdb->prepare(
-                    " SELECT content FROM $table_name WHERE id = 32")
-                );
-                echo '<style>
-                    .BePopiaCompliant {
-                        background-color: whitesmoke;
-                        color: #000;
-                        text-align: center;
-                        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-                    }
-                    .cont1 {
-                        margin: auto;
-                        width: 50%;
-                        height: 125px;
-                        display: flex;
-                    }
-                    .be_popia_compliant_img {
-                        margin: auto 0 auto auto;
-                    }
-                    .be_popia_compliant_links {
-                        margin: auto auto auto 0;
-                        width: 75%;
-                        padding: 1%;
-                        font-weight:900;
-                    }
-                    .be_popia_compliant_links a {
-                        color: #BD2E2E;
-                        text-decoration: none;
-                        font-variant-caps: all-petite-caps;
-                    }
-                    @media only screen and (max-width: 600px) {    
-                        .be_popia_compliant_img {
-                            margin: auto 0 auto auto;
-                        }
-                        .be_popia_compliant_links {
-                            margin: auto auto auto 0;
-                            width: 100%;
-                            font-weight: 900;
-                        }
-                        .cont1 {
-                            margin: auto;
-                            width: 50%;
-                            height: 245px;
-                            display: block;
-                        }
-                    }
-                </style>
-                <div class="BePopiaCompliant">
-                    <div class="cont1">
-                        <div class="be_popia_compliant_img">
-                            <a href="https://bepopiacompliant.co.za" target="_blank"><img alt="POPIA Compliant" src="data:image/png;base64,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" oncontextmenu="return false;" />
-                            </a>
-                        </div>
-                        <div class="be_popia_compliant_links">
-                            <a href="' . $privacy .'" target="_blank"><span style="white-space:nowrap">PRIVACY POLICY</span></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="' . $data .'"target="_blank"><span style="white-space:nowrap">DATA REQUESTS</span></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="' . $parties .'" target="_blank"><span style="white-space:nowrap">RESPONSIBLE PARTIES</span></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="https://bepopiacompliant.co.za/information_regulator" target="_blank"><span style="white-space:nowrap">INFORMATION REGULATOR</span></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                        </div>
-                    </div>
-                </div>';
+            $args = array(
+                'headers' => array(
+                    'Content-Type' => 'application/json',
+                ),
+                'body'    => array(),
+            );
+        
+            $response = wp_remote_get( wp_http_validate_url($url), $args );
+        
+            $response_code = wp_remote_retrieve_response_code( $response );
+            $body         = wp_remote_retrieve_body( $response );
+        
+            if ( 401 === $response_code ) {
+                echo "Unauthorized access";
             }
-        }
-    }
+        
+            if ( 200 !== $response_code ) {
+                echo "Error in pinging API" . esc_html( $response_code );
+            }
+        
+            if ( 200 === $response_code ) {
+                $body = json_decode( $body );
 
+                foreach ( $body as $data ) {
+                    $domain_form_complete = $data->domain_form_complete;
+                    $consent_form_complete = $data->consent_form_complete;
+                    $other_parties = $data->other_parties;
+                    
+                    global $wpdb;
+                    $table_name = $wpdb->prefix . 'be_popia_compliant_admin';
+
+                    if($domain_form_complete == 1 && $consent_form_complete == 1 && $other_parties != null){
+                        $wpdb->update( $table_name, array( 'value' => 1),array('id'=> 4)); 
+                    } else {
+                        $wpdb->update( $table_name, array( 'value' => 0),array('id'=> 4)); 
+                    }
+                }
+            }
+                    if(((isset($result_api->value) && $result_api->value != '') && ((isset($result_company->value)) && $result_company->value != ''))){
+                        include_once(plugin_dir_path(__FILE__).'/includes/be-popia-compliant-completed.php');
+                    } elseif($rowcount == 100) {
+                        $url = wp_http_validate_url("https://py.bepopiacompliant.co.za/api/plugindetailscheck/" . $_SERVER['SERVER_NAME']);
+                        $args = array(
+                            'headers' => array(
+                                'Content-Type' => 'application/json',
+                            ),
+                            'body'    => array(),
+                        );
+                        $response = wp_remote_get( wp_http_validate_url($url), $args );
+                        $response_code = wp_remote_retrieve_response_code( $response );
+                        $body         = wp_remote_retrieve_body( $response );
+            
+                        if ( 401 === $response_code ) {
+                            echo "Unauthorized access";
+                        }
+                        if ( 200 !== $response_code ) {
+                            echo "Error in pinging API" . esc_html( $response_code );
+                        }
+                        if ( 200 === $response_code ) {
+                            // echo 'body' . $body;
+                            $body = json_decode( $body );
+            
+                            if($body != []){
+                                foreach ( $body as $data ) {
+                                    $is_approved = $data->is_approved;
+                                    if($is_approved){
+                                $table_name = $wpdb->prefix . 'be_popia_compliant_checklist';
+                                $privacy = $wpdb->get_var( $wpdb->prepare(
+                                    " SELECT content FROM $table_name WHERE id = 6")
+                                );
+                                $data = $wpdb->get_var( $wpdb->prepare(
+                                    " SELECT content FROM $table_name WHERE id = 21")
+                                );
+                                $parties = $wpdb->get_var( $wpdb->prepare(
+                                    " SELECT content FROM $table_name WHERE id = 32")
+                                );
+                                
+                
+                                echo '<style>
+                                    .BePopiaCompliant {
+                                        background-color: whitesmoke;
+                                        color: #000;
+                                        text-align: center;
+                                        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+                                    }
+                                    .cont1 {
+                                        margin: auto;
+                                        width: 50%;
+                                        height: 125px;
+                                        display: flex;
+                                    }
+                                    .be_popia_compliant_img {
+                                        margin: auto 0 auto auto;
+                                    }
+                                    .be_popia_compliant_links {
+                                        margin: auto auto auto 0;
+                                        width: 75%;
+                                        padding: 1%;
+                                        font-weight:900;
+                                        font-size: 23px;
+                                    }
+                                    .be_popia_compliant_links a {
+                                        color: #BD2E2E;
+                                        text-decoration: none;
+                                        font-variant-caps: all-petite-caps;
+                                    }
+                                    @media only screen and (max-width: 600px) {    
+                                        .be_popia_compliant_img {
+                                            margin: auto 0 auto auto;
+                                        }
+                                        .be_popia_compliant_links {
+                                            margin: auto auto auto 0;
+                                            width: 100%;
+                                            font-weight: 900;
+                                            font-size: 23px;
+                                        }
+                                        .cont1 {
+                                            margin: auto;
+                                            width: 50%;
+                                            height: 245px;
+                                            display: block;
+                                        }
+                                    }
+                                </style>
+                                <div class="BePopiaCompliant">
+                                    <div class="cont1">
+                                        <div class="be_popia_compliant_img">
+                                            <a href="https://bepopiacompliant.co.za" target="_blank"><img alt="Self Audited - POPIA Compliant" src="data:image/png;base64,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" oncontextmenu="return false;" />
+                                            </a>
+                                        </div>
+                                        <div class="be_popia_compliant_links">
+                                            <a href="' . esc_url( $privacy ) .'" target="_blank"><span style="white-space:nowrap">PRIVACY POLICY</span></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="' . esc_url( $data ) .'"target="_blank"><span style="white-space:nowrap">DATA REQUESTS</span></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="' . esc_url( $parties ) .'" target="_blank"><span style="white-space:nowrap">RESPONSIBLE PARTIES</span></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="https://bepopiacompliant.co.za/#/regulator/' . $_SERVER['SERVER_NAME'] . '" target="_blank"><span style="white-space:nowrap">INFORMATION REGULATOR</span></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                        </div>
+                                    </div>
+                                </div>';
+                            }
+                        }
+                    }
+                }
+            }
+        } //isSSL
+    }
 }
 
 

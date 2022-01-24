@@ -415,3 +415,8 @@
     margin: 10px 0px;
     font-size: 16px;
 }
+
+
+div#page-container {
+    overflow-x: hidden !important;
+}
